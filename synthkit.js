@@ -28,12 +28,17 @@ var synthkit = function() {
       var gain = 0;
       var last = { level : 0 };
 
+      var pow = function(val) {
+        val = Math.max(0, Math.min(val, 1) );
+        return (val == 0)? 0 : Math.pow(10, (val - 1) * 3);
+      };
+
       var module = {
         level : _const(level || 1),
         input : _const(0),
         output : function() {
           if (last.level != module.level() ) {
-            gain = Math.pow(10, Math.max(0, Math.min(module.level(), 1) ) - 1);
+            gain = pow(module.level() );
             last.level = module.level();
           }
           return module.input() * gain; 
@@ -54,7 +59,7 @@ var synthkit = function() {
         freq : _const(freq || 440),
         sync : function() { t = 0; },
         output : function() { return Math.sin(t); },
-        delta : function() { t += _2PI * module.freq() / Fs; }
+        delta : function() { t = (t + _2PI * module.freq() / Fs) % _2PI; }
       };
 
       synth.register(module);
@@ -70,7 +75,7 @@ var synthkit = function() {
         freq : _const(freq || 440),
         sync : function() { t = 0; },
         output : function() { return ~~t % 2 == 1? -1 : 1; },
-        delta : function() { t += 2 * module.freq() / Fs; }
+        delta : function() { t = (t + 2 * module.freq() / Fs) % 2; }
       };
 
       synth.register(module);
@@ -85,8 +90,8 @@ var synthkit = function() {
       var module = {
         freq : _const(freq || 440),
         sync : function() { t = 0; },
-        output : function() { return ( (t + 0.5) % 1) * 2 - 1; },
-        delta : function() { t += 2 * module.freq() / Fs; }
+        output : function() { return ( (t + 0.5) % 2) * 2 - 1; },
+        delta : function() { t = (t + 2 * module.freq() / Fs) % 2; }
       };
 
       synth.register(module);
@@ -104,7 +109,7 @@ var synthkit = function() {
         output : function() {
           var tt = t + 0.5;
           return (~~tt % 2 == 1? tt % 1 : 1 - tt % 1) * 2 - 1; },
-        delta : function() { t += 2 * module.freq() / Fs; }
+        delta : function() { t = (t + 2 * module.freq() / Fs) % 2; }
       };
 
       synth.register(module);

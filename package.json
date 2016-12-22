@@ -1,0 +1,22 @@
+{
+  "name": "synthkit",
+  "version": "0.1.0",
+  "description": "simple wave generator",
+  "author": "Kazuhiko Arase",
+  "main": "synthkit.js",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/kazuhikoarase/synthkit.git"
+  },
+  "bugs": {
+    "url": "https://github.com/kazuhikoarase/synthkit/issues"
+  },
+  "keywords": [
+    "synth",
+    "synthesizer",
+    "wave",
+    "generator",
+    "audio"
+  ],
+  "license": "MIT"
+}
