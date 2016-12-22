@@ -13,12 +13,17 @@ $(function() {
   }
 
   var audioCtx = new AudioContext();
+  var synth = synthkit.createSynth();
+  var mixer = synth.mixer();
+  var synthNode = synthkit.createSynthNode(audioCtx, synth, mixer.output);
+  var gainNode = audioCtx.createGain();
+  gainNode.gain.value = 0.2;
+  synthNode.connect(gainNode);
+  gainNode.connect(audioCtx.destination);
 
   var _const = synthkit._const;
-  var createSynth = synthkit.createSynth;
-  var createSynthNode = synthkit.createSynthNode;
   var FilterType = synthkit.FilterType;
-  
+
   var samples = [
     {
       label : 'Simple',
@@ -29,9 +34,8 @@ $(function() {
         { id : 'freq', type : 'log', label : 'Freq', min : 20, max : 20000 },
         { id : 'vol', type : 'liner', label : 'Vol', min : 0, max : 1 }
       ],
+      settings : { freq : 440, vol : 1 },
       init : function(ui) {
-
-        var synth = createSynth();
 
         var waves = {
           sin : synth.sin(),
@@ -42,27 +46,18 @@ $(function() {
         };
 
         var gain = synth.gain();
-        gain.level = _const(0);
+        gain.level = function() {
+          return ui.vol.data('output')() * ui.pad1.data('output')();
+        };
 
-        var synthNode = createSynthNode(audioCtx, synth, gain.output);
-        var gainNode = audioCtx.createGain();
-        gainNode.gain.value = 0.2;
-        synthNode.connect(gainNode);
-        gainNode.connect(audioCtx.destination);
+        mixer.inputs.push(gain.output);
 
         // setup ui
-        ui.pad1.on('mousedown', function(event) {
-          gain.level = ui.vol.data('output');
-        }).on('mouseup', function(event) {
-          gain.level = _const(0);
-        });
         ui.wave.on('change', function(event) {
           var wave = waves[$(event.target).data('output')()];
           gain.input = wave.output;
           wave.freq = ui.freq.data('output');
         }).trigger('change');
-        ui.freq.data('output')(440);
-        ui.vol.data('output')(1);
       }
     },
     {
@@ -77,9 +72,16 @@ $(function() {
         { id : 's', type : 'liner', label : 'Sustain', min : 0, max : 1 },
         { id : 'r', type : 'liner', label : 'Release', min : 0, max : 1 }
       ],
+      settings : {
+        "pad1": 0,
+        "wave": "square",
+        "freq": 440,
+        "a": 0,
+        "d": 0,
+        "s": 1,
+        "r": 0
+      },
       init : function(ui) {
-
-        var synth = createSynth();
 
         var waves = {
           sin : synth.sin(),
@@ -98,23 +100,13 @@ $(function() {
 
         var gain = synth.gain();
         gain.level = eg.output;
-
-        var synthNode = createSynthNode(audioCtx, synth, gain.output);
-        var gainNode = audioCtx.createGain();
-        gainNode.gain.value = 0.2;
-        synthNode.connect(gainNode);
-        gainNode.connect(audioCtx.destination);
+        mixer.inputs.push(gain.output);
 
         ui.wave.on('change', function(event) {
           var wave = waves[$(event.target).data('output')()];
           gain.input = wave.output;
           wave.freq = ui.freq.data('output');
         }).trigger('change');
-        ui.freq.data('output')(440);
-        ui.a.data('output')(0);
-        ui.d.data('output')(0);
-        ui.s.data('output')(1);
-        ui.r.data('output')(0);
       }
     },
     {
@@ -123,8 +115,6 @@ $(function() {
         { id : 'pad1', type : 'pad', label : 'Pad' }
       ],
       init : function(ui) {
-
-        var synth = createSynth();
 
 //        var noise = synth.noise();
         var lfo = synth.sh(64);
@@ -181,13 +171,7 @@ $(function() {
         };
 */
 
-//        var synthNode = createSynthNode(audioCtx, synth, wave.output);
-//        var synthNode = createSynthNode(audioCtx, synth, lpf.output);
-        var synthNode = createSynthNode(audioCtx, synth, gain.output);
-        var gainNode = audioCtx.createGain();
-        gainNode.gain.value = 0.2;
-        synthNode.connect(gainNode);
-        gainNode.connect(audioCtx.destination);
+        mixer.inputs.push(gain.output);
       }
     }
   ];
@@ -215,11 +199,13 @@ $(function() {
         model.on = true;
         $pad.css('fill', '#999999');
         $(document).on('mouseup', pad_mouseupHandler);
+        $comp.trigger('change');
       });
     var pad_mouseupHandler = function(event) {
       model.on = false;
       $pad.css('fill', '#666666');
       $(document).off('mouseup', pad_mouseupHandler);
+      $comp.trigger('change');
     };
     var output = function(output) {
       if (arguments.length == 0) {
@@ -428,8 +414,25 @@ $(function() {
     $ui.append($('<div></div>').text(sample.label) );
     $.each(sample.ui || [], function(i, comp) {
       ui[comp.id] = createComponent(comp);
+      var output = (sample.settings || {})[comp.id];
+      if (typeof output != 'undefined') {
+        ui[comp.id].data('output')(output);
+      }
       $ui.append(ui[comp.id]);
     });
+    $ui.append($('<input type="button" />').val('copy settings').
+        on('click', function(event) {
+          var settings = {};
+          $.each(sample.ui || [], function(i, comp) {
+            settings[comp.id] = ui[comp.id].data('output')();
+          });
+          var $tmp = $('<textarea></textarea>').
+            val(JSON.stringify(settings, null, 2) );
+          $('BODY').append($tmp);
+          $tmp.select();
+          document.execCommand('copy');
+          $tmp.remove();
+        }) );
     sample.init(ui);
     $ui.on('change', function(event) {
       var $target = $(event.target);

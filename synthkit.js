@@ -53,14 +53,35 @@ var synthkit = function() {
       return module;
     };
 
+    var mixer = function(level) {
+
+      var module = {
+        level : _const(level || 1),
+        inputs : [],
+        output : function() {
+          var val = 0;
+          for (var i = 0; i < module.inputs.length; i += 1) {
+            val += module.inputs[i]();
+          }
+          return val;
+        },
+        delta : function() {}
+      };
+
+      synth.register(module);
+
+      return module;
+    };
+
     var sin = function(freq) {
 
       var t = 0;
+      var a = 1;
 
       var module = {
         freq : _const(freq || 440),
         sync : function() { t = 0; },
-        output : function() { return Math.sin(t); },
+        output : function() { return a * Math.sin(t); },
         delta : function() { t = (t + _2PI * module.freq() / Fs) % _2PI; }
       };
 
@@ -72,11 +93,12 @@ var synthkit = function() {
     var square = function(freq) {
 
       var t = 0;
+      var a = 1;
 
       var module = {
         freq : _const(freq || 440),
         sync : function() { t = 0; },
-        output : function() { return ~~t % 2 == 1? -1 : 1; },
+        output : function() { return ~~t % 2 == 1? -a : a; },
         delta : function() { t = (t + 2 * module.freq() / Fs) % 2; }
       };
 
@@ -88,11 +110,13 @@ var synthkit = function() {
     var saw = function(freq) {
 
       var t = 0;
+      var a = 1;
+      var a2 = a * 2;
 
       var module = {
         freq : _const(freq || 440),
         sync : function() { t = 0; },
-        output : function() { return ( (t + 0.5) % 2) * 2 - 1; },
+        output : function() { return ( (t + 0.5) % 2) * a2 - a; },
         delta : function() { t = (t + 2 * module.freq() / Fs) % 2; }
       };
 
@@ -104,13 +128,15 @@ var synthkit = function() {
     var triangle = function(freq) {
 
       var t = 0;
+      var a = 1;
+      var a2 = a * 2;
 
       var module = {
         freq : _const(freq || 440),
         sync : function() { t = 0; },
         output : function() {
           var tt = t + 0.5;
-          return (~~tt % 2 == 1? tt % 1 : 1 - tt % 1) * 2 - 1; },
+          return (~~tt % 2 == 1? tt % 1 : 1 - tt % 1) * a2 - a; },
         delta : function() { t = (t + 2 * module.freq() / Fs) % 2; }
       };
 
@@ -122,12 +148,14 @@ var synthkit = function() {
     var noise = function() {
 
       var val = 0;
+      var a = 1;
+      var a2 = a * 2;
       var update = true;
 
       var module = {
         output : function() {
           if (update) {
-            val = Math.random() * 2 - 1;
+            val = Math.random() * a2 - a;
             update = false;
           }
           return val;
@@ -336,6 +364,7 @@ var synthkit = function() {
         }
       },
       gain : gain,
+      mixer : mixer,
       sin : sin,
       square : square,
       saw : saw,
