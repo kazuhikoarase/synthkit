@@ -191,19 +191,19 @@ $(function() {
   var createPad = function($comp, size, spec) {
     var gap = 4;
     var model = { on : false };
-    var $pad = createSVGElement('rect').css('fill', '#666666').
+    var $pad = createSVGElement('rect').css('fill', '#000000').
       css('stroke', 'none').attr({x : gap, y : gap,
         width : size - gap * 2, height : size - gap * 2, rx : 6, ry: 6}).
       on('mousedown', function(event) {
         event.preventDefault();
         model.on = true;
-        $pad.css('fill', '#999999');
+        $pad.css('fill', '#333333');
         $(document).on('mouseup', pad_mouseupHandler);
         $comp.trigger('change');
       });
     var pad_mouseupHandler = function(event) {
       model.on = false;
-      $pad.css('fill', '#666666');
+      $pad.css('fill', '#000000');
       $(document).off('mouseup', pad_mouseupHandler);
       $comp.trigger('change');
     };
@@ -227,10 +227,10 @@ $(function() {
     var r = size / 2 - gap;
 
     var $knob = createSVGElement('g').
-      append(createSVGElement('circle').css('fill', '#666666').
+      append(createSVGElement('circle').css('fill', '#000000').
         css('stroke', 'none').attr({ cx : 0, cy : 0, r : r }) ).
       append(createSVGElement('path').css('fill', 'none').
-        css('stroke-width', '4').css('stroke', '#000000').
+        css('stroke-width', '4').css('stroke', '#ffffff').
         attr('d', 'M0 0L' + 0 + ' ' + r) ).
       on('mousedown', function(event) {
         event.preventDefault();
@@ -381,9 +381,10 @@ $(function() {
     var h = size + fontSize + 4;
     var $comp = createSVG(w, h).attr('id', comp.id);
     $comp.append(createSVGElement('rect').
-        css('stroke', 'none').css('fill', '#f0f0f0').
+        css('stroke', 'none').css('fill', '#cccccc').
         attr({ x : 0, y : 0, width : w, height : h }) ).
       append(createSVGElement('text').
+        css('stroke', 'none').css('fill', '#000000').
         css('font-size', fontSize + 'px').
         css('text-anchor', 'middle').
         css('alignment-baseline', 'text-before-edge').
@@ -420,7 +421,9 @@ $(function() {
       }
       $ui.append(ui[comp.id]);
     });
-    $ui.append($('<input type="button" />').val('copy settings').
+    $ui.append($('<input type="button" />').
+        css('margin-left', '8px').
+        val('copy settings').
         on('click', function(event) {
           var settings = {};
           $.each(sample.ui || [], function(i, comp) {
