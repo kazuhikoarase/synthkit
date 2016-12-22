@@ -28,9 +28,11 @@ var synthkit = function() {
       var gain = 0;
       var last = { level : 0 };
 
-      var pow = function(val) {
-        val = Math.max(0, Math.min(val, 1) );
-        return (val == 0)? 0 : Math.pow(10, (val - 1) * 3);
+      var min = Math.exp(0);
+      var max = Math.exp(1);
+      var range = max - min;
+      var toGain = function(val) {
+        return (Math.exp(Math.max(0, Math.min(val, 1) ) ) - min) / range;
       };
 
       var module = {
@@ -38,7 +40,7 @@ var synthkit = function() {
         input : _const(0),
         output : function() {
           if (last.level != module.level() ) {
-            gain = pow(module.level() );
+            gain = toGain(module.level() );
             last.level = module.level();
           }
           return module.input() * gain; 
@@ -273,36 +275,44 @@ var synthkit = function() {
 
       var val = 0;
       var state = 'r';
-      var rate = 1 / Fs / 10;
-      var pow = function(val) { return Math.pow(rate, val); };
+      var last = { input : 0 };
 
-      // a, d, r : 0 ~ 1 = 0s ~ 10s
-      // s : 0 ~ 1
+      //TODO
+      var speed = 10;
+      var min = Math.exp(-speed);
+      var rate = (1 - min) * 1000 / Fs;
+      var toDV = function(val) {
+        return rate * (Math.exp(-speed * val) - min);
+      };
+
       var module = {
         attack : _const(0),
         decay : _const(0),
         sustain : _const(1),
         release : _const(0),
+        input : _const(0),
         output : function() { return val; },
-        on : function() { state = 'a'; },
-        off : function() { state = 'r'; },
         delta : function() {
+          if (last.input != module.input() ) {
+            state = last.input != 0? 'r' : 'a';
+            last.input = module.input();
+          }
           switch(state) {
           case 'a' :
             if (val < 1) {
-              val = Math.min(1, val + pow(module.attack() ) );
+              val = Math.min(1, val + toDV(module.attack() ) );
             } else {
               state = 'd';
             }
             break;
           case 'd' :
             if (val > module.sustain() ) {
-              val = Math.max(module.sustain(), val - pow(module.decay() ) );
+              val = Math.max(module.sustain(), val - toDV(module.decay() ) );
             }
             break;
           case 'r' :
             if (val > 0) {
-              val = Math.max(0, val - pow(module.release() ) );
+              val = Math.max(0, val - toDV(module.release() ) );
             }
             break;
           default :

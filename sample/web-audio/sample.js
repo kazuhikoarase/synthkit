@@ -26,8 +26,8 @@ $(function() {
         { id : 'pad1', type : 'pad', label : 'Pad' },
         { id : 'wave', type : 'select', label : 'Wave',
           options : [ 'sin', 'square', 'saw', 'triangle', 'noise'] },
-        { id : 'vol', type : 'liner', label : 'Vol', min : 0, max : 1 },
-        { id : 'freq', type : 'log', label : 'Freq', min : 20, max : 20000 }
+        { id : 'freq', type : 'log', label : 'Freq', min : 20, max : 20000 },
+        { id : 'vol', type : 'liner', label : 'Vol', min : 0, max : 1 }
       ],
       init : function(ui) {
 
@@ -60,10 +60,61 @@ $(function() {
           var wave = waves[$(event.target).data('output')()];
           gain.input = wave.output;
           wave.freq = ui.freq.data('output');
-          console.log(wave);
         }).trigger('change');
-        ui.vol.data('output')(1);
         ui.freq.data('output')(440);
+        ui.vol.data('output')(1);
+      }
+    },
+    {
+      label : 'EG Test',
+      ui : [
+        { id : 'pad1', type : 'pad', label : 'Pad' },
+        { id : 'wave', type : 'select', label : 'Wave',
+          options : [ 'sin', 'square', 'saw', 'triangle', 'noise'] },
+        { id : 'freq', type : 'log', label : 'Freq', min : 20, max : 20000 },
+        { id : 'a', type : 'liner', label : 'Attack', min : 0, max : 1 },
+        { id : 'd', type : 'liner', label : 'Decay', min : 0, max : 1 },
+        { id : 's', type : 'liner', label : 'Sustain', min : 0, max : 1 },
+        { id : 'r', type : 'liner', label : 'Release', min : 0, max : 1 }
+      ],
+      init : function(ui) {
+
+        var synth = createSynth();
+
+        var waves = {
+          sin : synth.sin(),
+          square : synth.square(),
+          saw : synth.saw(),
+          triangle : synth.triangle(),
+          noise : synth.noise()
+        };
+
+        var eg = synth.eg();
+        eg.attack = ui.a.data('output');
+        eg.decay = ui.d.data('output');
+        eg.sustain = ui.s.data('output');
+        eg.release = ui.r.data('output');
+        eg.input = ui.pad1.data('output');
+
+        var gain = synth.gain();
+        gain.level = eg.output;
+
+        var synthNode = createSynthNode(audioCtx, synth, gain.output);
+        var gainNode = audioCtx.createGain();
+        gainNode.gain.value = 0.2;
+        synthNode.connect(gainNode);
+        gainNode.connect(audioCtx.destination);
+
+        ui.wave.on('change', function(event) {
+          var wave = waves[$(event.target).data('output')()];
+          gain.input = wave.output;
+          wave.freq = ui.freq.data('output');
+        }).trigger('change');
+        ui.freq.data('output')(440);
+        ui.a.data('output')(0);
+        ui.d.data('output')(0);
+        ui.s.data('output')(1);
+        ui.r.data('output')(0);
       }
     },
     {
@@ -109,6 +160,8 @@ $(function() {
         eg.decay = _const(1);
         eg.sustain = _const(0.8);
         eg.release = _const(0.9);
+        eg.input = ui.pad1.data('output');
+
         gain.level = eg.output;
 /*
         var eg_delta = eg.delta;
@@ -127,12 +180,7 @@ $(function() {
           }
         };
 */
-        ui.pad1.on('mousedown', function(event) {
-          eg.on();
-        }).on('mouseup', function(event) {
-          eg.off();
-        });
- 
+
 //        var synthNode = createSynthNode(audioCtx, synth, wave.output);
 //        var synthNode = createSynthNode(audioCtx, synth, lpf.output);
         var synthNode = createSynthNode(audioCtx, synth, gain.output);
@@ -158,18 +206,31 @@ $(function() {
 
   var createPad = function($comp, size, spec) {
     var gap = 4;
+    var model = { on : false };
     var $pad = createSVGElement('rect').css('fill', '#666666').
       css('stroke', 'none').attr({x : gap, y : gap,
-        width : size - gap * 2, height : size - gap * 2, rx : 4, ry:  4}).
+        width : size - gap * 2, height : size - gap * 2, rx : 6, ry: 6}).
       on('mousedown', function(event) {
         event.preventDefault();
+        model.on = true;
         $pad.css('fill', '#999999');
         $(document).on('mouseup', pad_mouseupHandler);
       });
     var pad_mouseupHandler = function(event) {
+      model.on = false;
       $pad.css('fill', '#666666');
       $(document).off('mouseup', pad_mouseupHandler);
     };
+    var output = function(output) {
+      if (arguments.length == 0) {
+        return model.on? 1 : 0;
+      } else if (arguments.length == 1) {
+        model.on = output != 0;
+      } else {
+        throw 'illegal arguments';
+      }
+    };
+    $comp.data('output', output);
     return $pad;
   };
 
@@ -288,7 +349,7 @@ $(function() {
     var $path = createSVGElement('path').
     css('stroke', 'none').css('fill', '#ffcc00');
     var $panel = createSVGElement('g').
-      attr('transform', 'translate(' + gap + ' ' + (size - 12) / 2 + ')').
+      attr('transform', 'translate(' + gap + ' ' + (size - 12 - 4) + ')').
       append(createSVGElement('rect').attr({x : 0, y : 0,
         width: size - gap * 2, height: 12}) ).
       append($path).on('mousedown', function(event) {
