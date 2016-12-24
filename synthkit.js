@@ -19,6 +19,13 @@ var synthkit = function() {
 
   var _const = function(val) { return function() { return val; } };
 
+  var BiquadFilterType = {
+    LPF : 'lpf',
+    HPF : 'hpf',
+    BPF : 'bpf',
+    NOTCH : 'notch'
+  };
+
   var createSynth = function() {
 
     var modules = [];
@@ -111,12 +118,11 @@ var synthkit = function() {
 
       var t = 0;
       var a = 1;
-      var a2 = a * 2;
 
       var module = {
         freq : _const(freq || 440),
         sync : function() { t = 0; },
-        output : function() { return ( (t + 1) % 2) / 2 * a2 - a; },
+        output : function() { return ( (t + 1) % 2) * a - a; },
         delta : function() { t = (t + 2 * module.freq() / Fs) % 2; }
       };
 
@@ -378,15 +384,8 @@ var synthkit = function() {
     return synth;
   };
 
-  var BiquadFilterType = {
-    LPF : 'lpf',
-    HPF : 'hpf',
-    BPF : 'bpf',
-    NOTCH : 'notch'
-  };
-
   var createSynthNode = function(audioCtx, synth, output) {
-    // no input, single output
+    // no input, single output.
     var scriptNode = audioCtx.createScriptProcessor(4096, 0, 1);
     scriptNode.onaudioprocess = function(event) {
       var outputBuffer = event.outputBuffer;
