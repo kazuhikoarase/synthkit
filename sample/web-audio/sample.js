@@ -6,20 +6,7 @@ $(function() {
 
   'use strict';
 
-  var AudioContext = window.AudioContext || window.webkitAudioContext;
-  if (!AudioContext) {
-    console.log('AudioContext not supported');
-    return;
-  }
 
-  var audioCtx = new AudioContext();
-  var synth = synthkit.createSynth();
-  var mixer = synth.mixer();
-  var synthNode = synthkit.createSynthNode(audioCtx, synth, mixer.output);
-  var gainNode = audioCtx.createGain();
-  gainNode.gain.value = 0.2;
-  synthNode.connect(gainNode);
-  gainNode.connect(audioCtx.destination);
 
   var _const = synthkit._const;
   var FilterType = synthkit.FilterType;
@@ -409,6 +396,23 @@ $(function() {
     return $comp;
   };
 
+  //-------------------------------------------------------
+
+  var AudioContext = window.AudioContext || window.webkitAudioContext;
+  if (!AudioContext) {
+    console.log('AudioContext not supported');
+    return;
+  }
+
+  var audioCtx = new AudioContext();
+  var synth = synthkit.createSynth();
+  var mixer = synth.mixer();
+  var synthNode = synthkit.createSynthNode(audioCtx, synth, mixer.output);
+  var gainNode = audioCtx.createGain();
+  gainNode.gain.value = 0.2;
+  synthNode.connect(gainNode);
+  gainNode.connect(audioCtx.destination);
+
   $.each(samples, function(i, sample) {
     var ui = {};
     var $ui = $('<div></div>').css('margin-bottom', '8px');
@@ -445,4 +449,48 @@ $(function() {
     });
     $('BODY').append($ui);
   });
+
+  !function() {
+    var synth = synthkit.createSynth();
+    var waves = [
+      synth.sin(),
+      synth.square(),
+      synth.saw(),
+      synth.triangle(),
+      synth.noise()
+    ];
+    var colors = [
+      'rgba(255,0,0,1)',
+      'rgba(255,192,0,1)',
+      'rgba(0,255,0,1)',
+      'rgba(0,0,255,1)',
+      'rgba(211,211,211,1)'
+    ];
+    var width = 200;
+    var height = 100;
+    var $cv = $('<canvas></canvas>').attr({ width: width, height: height });
+    var ctx = $cv[0].getContext('2d');
+    for (var w = 0; w < waves.length; w += 1) {
+      waves[w].freq = _const(1);
+    }
+    for (var w = waves.length - 1; w >= 0; w -= 1) {
+      ctx.beginPath();
+      ctx.strokeStyle = colors[w];
+      var Fs = synthkit.Fs;
+      for (var i = 0; i < Fs; i += 1) {
+        if (i % 100 == 0) {
+          var x = width * i / Fs;
+          var y = height / 2 - height / 2 * waves[w].output();
+          if (i == 0) {
+            ctx.moveTo(x, y);
+          } else {
+            ctx.lineTo(x, y);
+          }
+        }
+        synth.delta();
+      }
+      ctx.stroke();
+    }
+    $('BODY').append($cv);
+  }();
 });

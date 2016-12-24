@@ -116,7 +116,7 @@ var synthkit = function() {
       var module = {
         freq : _const(freq || 440),
         sync : function() { t = 0; },
-        output : function() { return ( (t + 0.5) % 2) * a2 - a; },
+        output : function() { return ( (t + 1) % 2) / 2 * a2 - a; },
         delta : function() { t = (t + 2 * module.freq() / Fs) % 2; }
       };
 
@@ -136,7 +136,7 @@ var synthkit = function() {
         sync : function() { t = 0; },
         output : function() {
           var tt = t + 0.5;
-          return (~~tt % 2 == 1? tt % 1 : 1 - tt % 1) * a2 - a; },
+          return (~~tt % 2 == 0? tt % 1 : 1 - tt % 1) * a2 - a; },
         delta : function() { t = (t + 2 * module.freq() / Fs) % 2; }
       };
 
