@@ -105,7 +105,7 @@ var synthkit = function() {
       var module = {
         freq : _const(freq || 440),
         sync : function() { t = 0; },
-        output : function() { return t % 2 < 1? a : -a; },
+        output : function() { return t < 1? a : -a; },
         delta : function() { t = (t + _2_Fs * module.freq() ) % 2; }
       };
 
@@ -116,14 +116,14 @@ var synthkit = function() {
 
     var saw = function(freq) {
 
-      var t = 0;
+      var t = 1;
       var a = 1;
       var _2_Fs = 2 / Fs;
 
       var module = {
         freq : _const(freq || 440),
-        sync : function() { t = 0; },
-        output : function() { return ( (t + 1) % 2) * a - a; },
+        sync : function() { t = 1; },
+        output : function() { return t * a - a; },
         delta : function() { t = (t + _2_Fs * module.freq() ) % 2; }
       };
 
@@ -134,17 +134,16 @@ var synthkit = function() {
 
     var triangle = function(freq) {
 
-      var t = 0;
+      var t = 0.5;
       var a = 1;
       var _2a = a * 2;
       var _2_Fs = 2 / Fs;
 
       var module = {
         freq : _const(freq || 440),
-        sync : function() { t = 0; },
+        sync : function() { t = 0.5; },
         output : function() {
-          var tt = t + 0.5;
-          return (~~tt % 2 == 0? tt % 1 : 1 - tt % 1) * _2a - a; },
+          return (~~t % 2 == 0? t % 1 : 1 - t % 1) * _2a - a; },
         delta : function() { t = (t + _2_Fs * module.freq() ) % 2; }
       };
 
