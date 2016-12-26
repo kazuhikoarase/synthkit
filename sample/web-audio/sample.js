@@ -224,7 +224,7 @@ $(function() {
   var createKnob = function($comp, size, spec) {
 
     var gap = 4;
-    var model = { angle : 45 };
+    var model = { val : -1, valid : false };
     var r = size / 2 - gap;
 
     var $knob = createSVGElement('g').
@@ -242,33 +242,39 @@ $(function() {
       var off = $comp.offset();
       var dx = event.pageX - (off.left + size / 2);
       var dy = event.pageY - (off.top + size / 2);
-      setAngle(-Math.atan2(dx, dy) * 360 / (2 * Math.PI) );
+      var angle = -Math.atan2(dx, dy) * 360 / (2 * Math.PI);
+      angle = Math.max(45, Math.min( (360 + angle) % 360, 315) );
+      val( (angle - 45) / 270);
     };
     var knob_mouseupHandler = function(event) {
       $(document).off('mousemove', knob_mousemoveHandler).
         off('mouseup', knob_mouseupHandler);
     };
-    var setAngle = function (angle) {
-      angle = Math.max(45, Math.min( (360 + angle) % 360, 315) );
-      $knob.attr('transform',
-          'translate(' + size / 2 + ',' + size / 2 +
-          ') rotate(' + angle + ')');
-      model.angle = angle;
-      $comp.trigger('change');
-    };
     var val = function(val) {
       if (arguments.length == 0) {
-        return (model.angle - 45) / 270;
+        return model.val;
       } else if (arguments.length == 1) {
-        setAngle(45 + 270 * val);
+        if (model.val != val) {
+          model.val = val;
+          model.valid = false;
+          $knob.attr('transform',
+            'translate(' + size / 2 + ',' + size / 2 +
+            ') rotate(' + (45 + 270 * val) + ')');
+          $comp.trigger('change');
+        }
       } else {
         throw 'illegal arguments';
       }
     };
     if (spec.type == 'liner') {
+      var outputCache = 0;
       var output = function(output) {
         if (arguments.length == 0) {
-          return spec.min + (spec.max - spec.min) * val();
+          if (!model.valid) {
+            outputCache = spec.min + (spec.max - spec.min) * val();
+            model.valid = true;
+          }
+          return outputCache;
         } else if (arguments.length == 1) {
           val( (output - spec.min) / (spec.max - spec.min) );
         } else {
@@ -277,12 +283,16 @@ $(function() {
       };
       $comp.data('output', output);
     } else if (spec.type == 'log') {
+      var outputCache = 0;
       var lmin = Math.log(spec.min);
       var lmax = Math.log(spec.max);
       var output = function(output) {
         if (arguments.length == 0) {
-          // 1 -Math.LOG2E
-          return Math.exp(lmin + (lmax - lmin) * val() );
+          if (!model.valid) {
+            outputCache = Math.exp(lmin + (lmax - lmin) * val() );
+            model.valid = true;
+          }
+          return outputCache;
         } else if (arguments.length == 1) {
           val( (Math.log(output) - lmin) / (lmax - lmin) );
         } else {

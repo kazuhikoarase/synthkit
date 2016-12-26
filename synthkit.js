@@ -48,7 +48,7 @@ var synthkit = function() {
             gain = toGain(module.level() );
             last.level = module.level();
           }
-          return module.input() * gain; 
+          return gain != 0? module.input() * gain : 0; 
         },
         delta : function() {}
       };
