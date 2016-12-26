@@ -189,6 +189,23 @@ $(function() {
       attr({ width: w, height: h, viewBox: '0 0 ' + w + ' ' + h });
   };
 
+  var createFontPath = function(c, cx, cy) {
+    var d = '';
+    var data = lcdfont.getData(c);
+    for (var y = 0; y < 7; y += 1) {
+      for (var x = 0; x < 5; x += 1) {
+        if ( (data[y] >> x) & 1) {
+          d += 'M' + (x + cx) + ' ' + (y + cy);
+          d += 'L' + (x + cx + 1) + ' ' + (y + cy);
+          d += 'L' + (x + cx + 1) + ' ' + (y + cy + 1);
+          d += 'L' + (x + cx) + ' ' + (y + cy + 1);
+          d += 'Z';
+        }
+      }
+    }
+    return d;
+  };
+
   var createPad = function($comp, size, spec) {
     var gap = 4;
     var model = { on : false };
@@ -208,7 +225,7 @@ $(function() {
       $(document).off('mouseup', pad_mouseupHandler);
       $comp.trigger('change');
     };
-    var output = function(output) {
+    $comp.data('output', function(output) {
       if (arguments.length == 0) {
         return model.on? 1 : 0;
       } else if (arguments.length == 1) {
@@ -216,8 +233,7 @@ $(function() {
       } else {
         throw 'illegal arguments';
       }
-    };
-    $comp.data('output', output);
+    } );
     return $pad;
   };
 
@@ -268,7 +284,7 @@ $(function() {
     };
     if (spec.type == 'liner') {
       var outputCache = 0;
-      var output = function(output) {
+      $comp.data('output', function(output) {
         if (arguments.length == 0) {
           if (!model.valid) {
             outputCache = spec.min + (spec.max - spec.min) * val();
@@ -280,13 +296,12 @@ $(function() {
         } else {
           throw 'illegal arguments';
         }
-      };
-      $comp.data('output', output);
+      } );
     } else if (spec.type == 'log') {
       var outputCache = 0;
       var lmin = Math.log(spec.min);
       var lmax = Math.log(spec.max);
-      var output = function(output) {
+      $comp.data('output', function(output) {
         if (arguments.length == 0) {
           if (!model.valid) {
             outputCache = Math.exp(lmin + (lmax - lmin) * val() );
@@ -298,28 +313,10 @@ $(function() {
         } else {
           throw 'illegal arguments';
         }
-      };
-      $comp.data('output', output);
+      } );
     }
     val(0);
     return $knob;
-  };
-
-  var createFontPath = function(c, cx, cy) {
-    var d = '';
-    var data = lcdfont.getData(c);
-    for (var y = 0; y < 7; y += 1) {
-      for (var x = 0; x < 5; x += 1) {
-        if ( (data[y] >> x) & 1) {
-          d += 'M' + (x + cx) + ' ' + (y + cy);
-          d += 'L' + (x + cx + 1) + ' ' + (y + cy);
-          d += 'L' + (x + cx + 1) + ' ' + (y + cy + 1);
-          d += 'L' + (x + cx) + ' ' + (y + cy + 1);
-          d += 'Z';
-        }
-      }
-    }
-    return d;
   };
 
   var createSelect = function($comp, size, spec) {
@@ -355,7 +352,7 @@ $(function() {
         setText(options[selectedIndex].label);
         $comp.trigger('change');
       });
-    var output = function(output) {
+    $comp.data('output', function(output) {
       if (arguments.length == 0) {
         // 1 -Math.LOG2E
         return options[selectedIndex].value;
@@ -370,8 +367,7 @@ $(function() {
       } else {
         throw 'illegal arguments';
       }
-    };
-    $comp.data('output', output);
+    } );
     var setText = function(text) {
       var len = text.length;
       var d = '';
@@ -468,7 +464,7 @@ $(function() {
     $ui.on('change', function(event) {
       var $target = $(event.target);
       console.log('change - ' +
-          $target.attr('id') + ' = ' +
+          $target.attr('id') + ' => ' +
           $target.data('output')() );
     });
     $('BODY').append($ui);
