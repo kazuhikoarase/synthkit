@@ -28,8 +28,6 @@ var synthkit = function() {
 
   var createSynth = function() {
 
-    var modules = [];
-
     var gain = function(level) {
 
       var gain = 0;
@@ -84,12 +82,13 @@ var synthkit = function() {
 
       var t = 0;
       var a = 1;
+      var _2PI_Fs = _2PI / Fs;
 
       var module = {
         freq : _const(freq || 440),
         sync : function() { t = 0; },
         output : function() { return a * Math.sin(t); },
-        delta : function() { t = (t + _2PI * module.freq() / Fs) % _2PI; }
+        delta : function() { t = (t + _2PI_Fs * module.freq() ) % _2PI; }
       };
 
       synth.register(module);
@@ -101,12 +100,13 @@ var synthkit = function() {
 
       var t = 0;
       var a = 1;
+      var _2_Fs = 2 / Fs;
 
       var module = {
         freq : _const(freq || 440),
         sync : function() { t = 0; },
-        output : function() { return ~~t % 2 == 1? -a : a; },
-        delta : function() { t = (t + 2 * module.freq() / Fs) % 2; }
+        output : function() { return t % 2 < 1? a : -a; },
+        delta : function() { t = (t + _2_Fs * module.freq() ) % 2; }
       };
 
       synth.register(module);
@@ -118,12 +118,13 @@ var synthkit = function() {
 
       var t = 0;
       var a = 1;
+      var _2_Fs = 2 / Fs;
 
       var module = {
         freq : _const(freq || 440),
         sync : function() { t = 0; },
         output : function() { return ( (t + 1) % 2) * a - a; },
-        delta : function() { t = (t + 2 * module.freq() / Fs) % 2; }
+        delta : function() { t = (t + _2_Fs * module.freq() ) % 2; }
       };
 
       synth.register(module);
@@ -135,15 +136,16 @@ var synthkit = function() {
 
       var t = 0;
       var a = 1;
-      var a2 = a * 2;
+      var _2a = a * 2;
+      var _2_Fs = 2 / Fs;
 
       var module = {
         freq : _const(freq || 440),
         sync : function() { t = 0; },
         output : function() {
           var tt = t + 0.5;
-          return (~~tt % 2 == 0? tt % 1 : 1 - tt % 1) * a2 - a; },
-        delta : function() { t = (t + 2 * module.freq() / Fs) % 2; }
+          return (~~tt % 2 == 0? tt % 1 : 1 - tt % 1) * _2a - a; },
+        delta : function() { t = (t + _2_Fs * module.freq() ) % 2; }
       };
 
       synth.register(module);
@@ -155,13 +157,13 @@ var synthkit = function() {
 
       var val = 0;
       var a = 1;
-      var a2 = a * 2;
+      var _2a = a * 2;
       var update = true;
 
       var module = {
         output : function() {
           if (update) {
-            val = Math.random() * a2 - a;
+            val = Math.random() * _2a - a;
             update = false;
           }
           return val;
@@ -179,6 +181,7 @@ var synthkit = function() {
       var val = 0;
       var t = 0;
       var last = { intT : ~~t };
+      var _2_Fs = 2 / Fs;
 
       var module = {
         freq : _const(freq || 440),
@@ -192,7 +195,7 @@ var synthkit = function() {
           }
           return val;
         },
-        delta : function() { t += 2 * module.freq() / Fs; }
+        delta : function() { t = (t + _2_Fs * module.freq() ) % 2; }
       };
 
       synth.register(module);
@@ -202,6 +205,8 @@ var synthkit = function() {
 
     // @see http://www.musicdsp.org/files/Audio-EQ-Cookbook.txt
     var biquadFilter = function(type, cutoff, resonance) {
+
+      var _2PI_Fs = _2PI / Fs;
 
       var _a1, _a2, _b0, _b1, _b2;
 
@@ -245,7 +250,7 @@ var synthkit = function() {
 
       var prepare = function() {
 
-        var w0 = _2PI * module.cutoff() / Fs;
+        var w0 = _2PI_Fs * module.cutoff();
         var sin_w0 = Math.sin(w0);
         var cos_w0 = Math.cos(w0);
         var alpha = sin_w0 / (2 * module.resonance() );
@@ -359,6 +364,8 @@ var synthkit = function() {
 
       return module;
     };
+
+    var modules = [];
 
     var synth = {
       register : function(module) {

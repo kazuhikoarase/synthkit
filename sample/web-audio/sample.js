@@ -50,8 +50,15 @@ $(function() {
       ui : [
         { id : 'pad1', type : 'pad', label : 'Pad' },
         { id : 'wave', type : 'select', label : 'Wave',
-          options : [ 'sin', 'square', 'saw', 'triangle', 'noise'] },
-        { id : 'freq', type : 'log', label : 'Freq', min : 20, max : 20000 },
+            options : [ 'sin', 'square', 'saw', 'triangle', 'noise' ] },
+        { id : 'freq', type : 'log', label : 'Freq',
+            min : 20, max : 20000 },
+        { id : 'filter', type : 'select', label : 'Filter',
+            options : [ 'lpf', 'hpf', 'bpf', 'notch' ] },
+        { id : 'cutoff', type : 'log', label : 'Cutoff',
+            min : 20, max : 20000 },
+        { id : 'resonance', type : 'liner',
+            label : 'Resonance', min : 0, max : 1 },
         { id : 'a', type : 'liner', label : 'Attack', min : 0, max : 1 },
         { id : 'd', type : 'liner', label : 'Decay', min : 0, max : 1 },
         { id : 's', type : 'liner', label : 'Sustain', min : 0, max : 1 },
@@ -61,6 +68,9 @@ $(function() {
         "pad1": 0,
         "wave": "square",
         "freq": 440,
+        "filter": "lpf",
+        "cutoff": 440,
+        "resonance": 0.5,
         "a": 0,
         "d": 0,
         "s": 1,
@@ -83,13 +93,19 @@ $(function() {
         eg.release = ui.r.data('output');
         eg.input = ui.pad1.data('output');
 
+        var filter = synth.filter();
+        filter.type = ui.filter.data('output');
+        filter.cutoff = ui.cutoff.data('output');
+        filter.resonance = ui.resonance.data('output');
+
         var gain = synth.gain();
+        gain.input = filter.output;
         gain.level = eg.output;
         mixer.inputs.push(gain.output);
 
         ui.wave.on('change', function(event) {
           var wave = waves[$(event.target).data('output')()];
-          gain.input = wave.output;
+          filter.input = wave.output;
           wave.freq = ui.freq.data('output');
         }).trigger('change');
       }
