@@ -364,6 +364,36 @@ var synthkit = function() {
       return module;
     };
 
+    var clock = function(beat, bpm) {
+
+      var ticks = 0;
+      var last = { beat : 0, bpm : 0 };
+      var unit = 0;
+
+      var module = {
+        beat : _const(beat || 8),
+        bpm : _const(bpm || 120),
+        trigger : function(){},
+        sync : function() { ticks = 0; },
+        delta : function() {
+          if (last.beat != module.beat() || last.bpm != module.bpm() ) {
+            unit = ~~(Fs / (module.bpm() / 60 * module.beat() / 4) );
+            last.beat = module.beat();
+            last.bpm = module.bpm();
+          }
+          if (ticks % unit == 0) {
+            module.trigger();
+            ticks = 0;
+          }
+          ticks += 1;
+        }
+      };
+
+      synth.register(module);
+
+      return module;
+    };
+    
     var modules = [];
 
     var synth = {
@@ -395,7 +425,8 @@ var synthkit = function() {
       noise : noise,
       sh : sampleAndHold,
       filter : biquadFilter,
-      eg : envelopeGenerator
+      eg : envelopeGenerator,
+      clock : clock
     };
 
     return synth;
