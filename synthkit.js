@@ -13,12 +13,6 @@ var synthkit = function() {
 
   'use strict';
 
-  var Fs = 44100; // fixed to 44.1kHz
-
-  var _2PI = 2 * Math.PI;
-
-  var _const = function(val) { return function() { return val; } };
-
   var BiquadFilterType = {
     LPF : 'lpf',
     HPF : 'hpf',
@@ -26,7 +20,13 @@ var synthkit = function() {
     NOTCH : 'notch'
   };
 
-  var createSynth = function() {
+  var createSynth = function(Fs) {
+
+    var Fs = Fs || 44100;
+
+    var _2PI = 2 * Math.PI;
+
+    var _const = function(val) { return function() { return val; } };
 
     var gain = function(level) {
 
@@ -367,8 +367,19 @@ var synthkit = function() {
     var modules = [];
 
     var synth = {
+      Fs : Fs,
+      _const : _const,
       register : function(module) {
         modules.push(module);
+      },
+      unregister : function(module) {
+        var newModules = [];
+        for (var i = 0; i < modules.length; i += 1) {
+          if (modules[i] != module) {
+            newModules.push(modules[i]);
+          }
+        }
+        modules = newModules;
       },
       delta : function() {
         for (var i = 0; i < modules.length; i += 1) {
@@ -405,8 +416,6 @@ var synthkit = function() {
   };
 
   return {
-    Fs : Fs,
-    _const : _const,
     createSynth : createSynth,
     FilterType : BiquadFilterType,
     createSynthNode : createSynthNode

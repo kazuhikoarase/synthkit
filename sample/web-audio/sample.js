@@ -6,7 +6,6 @@ $(function() {
 
   'use strict';
 
-  var _const = synthkit._const;
   var FilterType = synthkit.FilterType;
 
   var samples = [
@@ -389,7 +388,7 @@ $(function() {
     var $comp = createSVG(w, h).attr('id', comp.id);
     $comp.append(createSVGElement('rect').
         css('stroke', 'none').css('fill', '#cccccc').
-        attr({ x : 0, y : 0, width : w, height : h }) ).
+        attr({ x : 0, y : 0, width : w, height : h, rx : 4, ry : 4 }) ).
       append(createSVGElement('text').
         css('stroke', 'none').css('fill', '#000000').
         css('font-size', fontSize + 'px').
@@ -426,6 +425,7 @@ $(function() {
 
   var audioCtx = new AudioContext();
   var synth = synthkit.createSynth();
+  var _const = synth._const;
   var mixer = synth.mixer();
   var synthNode = synthkit.createSynthNode(audioCtx, synth, mixer.output);
   var gainNode = audioCtx.createGain();
@@ -474,6 +474,7 @@ $(function() {
   !function() {
 
     var synth = synthkit.createSynth();
+    var Fs = synth.Fs;
 
     var waves = [
       synth.sin(),
@@ -490,7 +491,6 @@ $(function() {
       'rgba(63,63,63,0.8)'
     ];
 
-    var Fs = synthkit.Fs;
     var width = 100;
     var height = 80;
     var $cv = $('<canvas></canvas>').attr({ width: width, height: height });
