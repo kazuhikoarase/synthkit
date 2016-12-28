@@ -31,7 +31,49 @@ var synthkit_sample = function() {
     return d;
   };
 
-  var createPad = function($comp, size, spec) {
+  var prop = function(getter, setter) {
+    return function() {
+      if (arguments.length == 0) {
+        return getter();
+      } else if (arguments.length == 1) {
+        if (typeof arguments[0] != 'undefined') {
+          setter(arguments[0]);
+        }
+      } else {
+        throw 'illegal number of arguments:' + arguments.length;
+      }
+    };
+  };
+
+  var createBase = function(size, spec) {
+
+    var fontSize = 12;
+    var w = size;
+    var h = size + fontSize + 4;
+
+    var $comp = createSVG(w, h).attr('id', spec.id).
+      css('vertical-align', 'top').
+      append(createSVGElement('rect').
+        css('stroke', 'none').css('fill', '#cccccc').
+        attr({ x : 0, y : 0, width : w, height : h, rx : 4, ry : 4 }) ).
+      append(createSVGElement('text').
+        css('stroke', 'none').css('fill', '#000000').
+        css('font-size', fontSize + 'px').
+        css('text-anchor', 'middle').
+        css('alignment-baseline', 'text-before-edge').
+        css('cursor', 'default').
+        text(spec.label || spec.id).
+        attr({ x : size / 2, y : size }).on('mousedown', function(event) {
+          event.preventDefault();
+        }) );
+    return $comp;
+  };
+
+  var createPad = function(spec) {
+
+    var size = 50;
+    var $comp = createBase(50, spec);
+
     var gap = 4;
     var model = { on : false };
     var $pad = createSVGElement('rect').css('fill', '#000000').
@@ -50,19 +92,25 @@ var synthkit_sample = function() {
       $(document).off('mouseup', pad_mouseupHandler);
       $comp.trigger('change');
     };
-    $comp.data('output', function(output) {
-      if (arguments.length == 0) {
-        return model.on? 1 : 0;
-      } else if (arguments.length == 1) {
-        model.on = output != 0;
-      } else {
-        throw 'illegal arguments';
-      }
-    } );
-    return $pad;
+    $comp.data('output', prop(function() {
+      return model.on? 1 : 0;
+    }, function(output) {
+      model.on = output != 0;
+    }) );
+    $comp.data('state', prop(function() {
+      return { output : $comp.data('output')() };
+    }, function(state) {
+      $comp.data('output')(state.output);
+    }) );
+    $comp.append($pad);
+
+    return $comp;
   };
 
-  var createKnob = function($comp, size, spec) {
+  var createKnob = function(spec) {
+
+    var size = 50;
+    var $comp = createBase(50, spec);
 
     var gap = 4;
     var model = { val : -1, valid : false };
@@ -91,60 +139,59 @@ var synthkit_sample = function() {
       $(document).off('mousemove', knob_mousemoveHandler).
         off('mouseup', knob_mouseupHandler);
     };
-    var val = function(val) {
-      if (arguments.length == 0) {
-        return model.val;
-      } else if (arguments.length == 1) {
-        if (model.val != val) {
-          model.val = val;
-          model.valid = false;
-          $knob.attr('transform',
-            'translate(' + size / 2 + ',' + size / 2 +
-            ') rotate(' + (45 + 270 * val) + ')');
-          $comp.trigger('change');
-        }
-      } else {
-        throw 'illegal arguments';
+    var val = prop(function() {
+      return model.val;
+    }, function(val) {
+      if (model.val != val) {
+        model.val = val;
+        model.valid = false;
+        $knob.attr('transform',
+          'translate(' + size / 2 + ',' + size / 2 +
+          ') rotate(' + (45 + 270 * val) + ')');
+        $comp.trigger('change');
       }
-    };
+    });
     if (spec.type == 'liner') {
       var outputCache = 0;
-      $comp.data('output', function(output) {
-        if (arguments.length == 0) {
-          if (!model.valid) {
-            outputCache = spec.min + (spec.max - spec.min) * val();
-            model.valid = true;
-          }
-          return outputCache;
-        } else if (arguments.length == 1) {
-          val( (output - spec.min) / (spec.max - spec.min) );
-        } else {
-          throw 'illegal arguments';
+      $comp.data('output', prop(function() {
+        if (!model.valid) {
+          outputCache = spec.min + (spec.max - spec.min) * val();
+          model.valid = true;
         }
-      } );
+        return outputCache;
+      }, function(output) {
+        val( (output - spec.min) / (spec.max - spec.min) );
+      }) );
     } else if (spec.type == 'log') {
       var outputCache = 0;
       var lmin = Math.log(spec.min);
       var lmax = Math.log(spec.max);
-      $comp.data('output', function(output) {
-        if (arguments.length == 0) {
-          if (!model.valid) {
-            outputCache = Math.exp(lmin + (lmax - lmin) * val() );
-            model.valid = true;
-          }
-          return outputCache;
-        } else if (arguments.length == 1) {
-          val( (Math.log(output) - lmin) / (lmax - lmin) );
-        } else {
-          throw 'illegal arguments';
+      $comp.data('output', prop(function() {
+        if (!model.valid) {
+          outputCache = Math.exp(lmin + (lmax - lmin) * val() );
+          model.valid = true;
         }
-      } );
+        return outputCache;
+      }, function(output) {
+        val( (Math.log(output) - lmin) / (lmax - lmin) );
+      }) );
     }
+    $comp.data('state', prop(function() {
+      return { output : $comp.data('output')() };
+    }, function(state) {
+      $comp.data('output')(state.output);
+    }) );
+    $comp.append($knob);
+
     val(0);
-    return $knob;
+
+    return $comp;
   };
 
-  var createSelect = function($comp, size, spec) {
+  var createSelect = function(spec) {
+
+    var size = 50;
+    var $comp = createBase(50, spec);
 
     var selectedIndex = 0;
     var options = [];
@@ -177,22 +224,22 @@ var synthkit_sample = function() {
         setText(options[selectedIndex].label);
         $comp.trigger('change');
       });
-    $comp.data('output', function(output) {
-      if (arguments.length == 0) {
-        // 1 -Math.LOG2E
-        return options[selectedIndex].value;
-      } else if (arguments.length == 1) {
-        for (var i = 0; i < options.length; i += 1) {
-          if (options[i].value == output) {
-            selectedIndex = i;
-            break;
-          }
+    $comp.data('output', prop(function() {
+      return options[selectedIndex].value;
+    }, function(output) {
+      for (var i = 0; i < options.length; i += 1) {
+        if (options[i].value == output) {
+          selectedIndex = i;
+          break;
         }
-        setText(options[selectedIndex].label);
-      } else {
-        throw 'illegal arguments';
       }
-    } );
+      setText(options[selectedIndex].label);
+    }) );
+    $comp.data('state', prop(function() {
+      return { output : $comp.data('output')() };
+    }, function(state) {
+      $comp.data('output')(state.output);
+    }) );
     var setText = function(text) {
       var len = text.length;
       var d = '';
@@ -201,81 +248,114 @@ var synthkit_sample = function() {
       }
       $path.attr('d', d);
     };
-    setText(options[selectedIndex].label);
     $comp.append($panel);
+
+    setText(options[selectedIndex].label);
+
+    return $comp;
+  };
+
+  var createEG = function(spec) {
+
+    var $a = createComponent({ id : spec.id + '.a', type : 'liner',
+      label : 'Attack', min : 0, max : 1 });
+    var $d = createComponent({ id : spec.id + '.d', type : 'liner',
+      label : 'Decay', min : 0, max : 1 });
+    var $s = createComponent({ id : spec.id + '.s', type : 'liner',
+      label : 'Sustain', min : 0, max : 1 });
+    var $r = createComponent({ id : spec.id + '.r', type : 'liner',
+      label : 'Release', min : 0, max : 1 });
+
+    var $comp = $('<div></div>').
+      css('vertical-align', 'top').
+      css('display', 'inline-block').
+      append($a).append($d).append($s).append($r).
+      append($('<br/>') ).
+      append($('<div></div>').
+          css('text-align', 'center').
+          text(spec.label || spec.id) );
+
+    $comp.data('attack', $a.data('output') ).
+      data('decay', $d.data('output') ).
+      data('sustain', $s.data('output') ).
+      data('release', $r.data('output') );
+
+    $comp.data('state', prop(function() {
+      return {
+        a : $a.data('output')(),
+        d : $d.data('output')(),
+        s : $s.data('output')(),
+        r : $r.data('output')() };
+    }, function(state) {
+      $a.data('output')(state.a);
+      $d.data('output')(state.d);
+      $s.data('output')(state.s);
+      $r.data('output')(state.r);
+    }) );
+    return $comp;
   };
 
   var createComponent = function(comp) {
-
-    var fontSize = 12;
-    var size = 50;
-    var w = size;
-    var h = size + fontSize + 4;
-    var $comp = createSVG(w, h).attr('id', comp.id);
-    $comp.append(createSVGElement('rect').
-        css('stroke', 'none').css('fill', '#cccccc').
-        attr({ x : 0, y : 0, width : w, height : h, rx : 4, ry : 4 }) ).
-      append(createSVGElement('text').
-        css('stroke', 'none').css('fill', '#000000').
-        css('font-size', fontSize + 'px').
-        css('text-anchor', 'middle').
-        css('alignment-baseline', 'text-before-edge').
-        text(comp.label || comp.id).
-        attr({ x : size / 2, y : size }) );
-
     switch(comp.type) {
     case 'pad' :
-      $comp.append(createPad($comp, size, comp) );
-      break;
+      return createPad(comp);
     case 'liner' :
     case 'log' :
-      $comp.append(createKnob($comp, size, comp) );
-      break;
+      return createKnob(comp);
     case 'select' :
-      $comp.append(createSelect($comp, size, comp) );
-      break;
+      return createSelect(comp);
+    case 'eg' :
+      return createEG(comp);
     default : 
       throw 'illegal type:' + comp.type; 
     }
-
-    return $comp;
   };
 
   //-------------------------------------------------------
 
   var createSample = function(sampleDef) {
     var ui = {};
+
     var $ui = $('<div></div>').css('margin-bottom', '8px');
-    $ui.append($('<div></div>').text(sampleDef.label) );
-    $.each(sampleDef.ui || [], function(i, comp) {
-      ui[comp.id] = createComponent(comp);
-      var output = (sampleDef.settings || {})[comp.id];
-      if (typeof output != 'undefined') {
-        ui[comp.id].data('output')(output);
-      }
-      $ui.append(ui[comp.id]);
-    });
-    $ui.append($('<input type="button" />').
-        css('margin-left', '8px').
+
+    $ui.append($('<div></div>').text(sampleDef.label) ).
+      append($('<input type="button" />').
+        css('margin', '4px 0px 4px 0px').
         val('copy settings').
         on('click', function(event) {
-          var settings = {};
+          var settings = '';
+          settings += '{';
           $.each(sampleDef.ui || [], function(i, comp) {
-            settings[comp.id] = ui[comp.id].data('output')();
+            if (i > 0) {
+              settings += ',';
+            }
+            settings += '\n  ' +
+              JSON.stringify(comp.id) + ':' +
+              JSON.stringify(ui[comp.id].data('state')() );
           });
-          var $tmp = $('<textarea></textarea>').
-            val(JSON.stringify(settings, null, 2) );
+          settings += '\n}';
+          var $tmp = $('<textarea></textarea>').val(settings);
           $('BODY').append($tmp);
           $tmp.select();
           document.execCommand('copy');
           $tmp.remove();
-        }) );
+        }) ).append($('<br/>') );
+
+    $.each(sampleDef.ui || [], function(i, comp) {
+      ui[comp.id] = createComponent(comp);
+      var state = (sampleDef.settings || {})[comp.id];
+      if (typeof state != 'undefined') {
+        ui[comp.id].data('state')(state);
+      }
+      $ui.append(ui[comp.id]);
+    });
+
     sampleDef.init(ui);
     $ui.on('change', function(event) {
       var $target = $(event.target);
       console.log('change - ' +
           $target.attr('id') + ' => ' +
-          $target.data('output')() );
+          JSON.stringify($target.data('state')() ) );
     });
     return $ui;
   }

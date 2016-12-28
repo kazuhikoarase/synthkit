@@ -18,7 +18,12 @@ $(function() {
         { id : 'freq', type : 'log', label : 'Freq', min : 20, max : 20000 },
         { id : 'vol', type : 'liner', label : 'Vol', min : 0, max : 1 }
       ],
-      settings : { freq : 440, vol : 1 },
+      settings : {
+        "pad1":{"output":0},
+        "wave":{"output":"sin"},
+        "freq":{"output":440},
+        "vol":{"output":1}
+      },
       init : function(ui) {
 
         var waves = {
@@ -58,22 +63,16 @@ $(function() {
             min : 20, max : 20000 },
         { id : 'resonance', type : 'log',
             label : 'Resonance', min : 0.001, max : 1 },
-        { id : 'a', type : 'liner', label : 'Attack', min : 0, max : 1 },
-        { id : 'd', type : 'liner', label : 'Decay', min : 0, max : 1 },
-        { id : 's', type : 'liner', label : 'Sustain', min : 0, max : 1 },
-        { id : 'r', type : 'liner', label : 'Release', min : 0, max : 1 }
+        { id : 'eg', type : 'eg', label : 'EG' }
       ],
       settings : {
-        "pad1": 0,
-        "wave": "square",
-        "freq": 440,
-        "filter": "lpf",
-        "cutoff": 440,
-        "resonance": 0.5,
-        "a": 0,
-        "d": 0,
-        "s": 1,
-        "r": 0
+        "pad1":{"output":0},
+        "wave":{"output":"square"},
+        "freq":{"output":440},
+        "filter":{"output":"lpf"},
+        "cutoff":{"output":440},
+        "resonance":{"output":0.5},
+        "eg":{"a":0,"d":0,"s":1,"r":0}
       },
       init : function(ui) {
 
@@ -86,10 +85,10 @@ $(function() {
         };
 
         var eg = synth.eg();
-        eg.attack = ui.a.data('output');
-        eg.decay = ui.d.data('output');
-        eg.sustain = ui.s.data('output');
-        eg.release = ui.r.data('output');
+        eg.attack = ui.eg.data('attack');
+        eg.decay = ui.eg.data('decay');
+        eg.sustain = ui.eg.data('sustain');
+        eg.release = ui.eg.data('release');
         eg.input = ui.pad1.data('output');
 
         var filter = synth.filter();
@@ -102,10 +101,10 @@ $(function() {
         gain.level = eg.output;
         mixer.inputs.push(gain.output);
 
-        /*
+/*
         var clock = function() {
           var count = 0;
-          var clock = synth.clock(4, 120);
+          var clock = synth.clock(32, 120);
           clock.trigger = function() {
             if (count % 2 == 0) {
               eg.input = _const(1);
@@ -117,8 +116,7 @@ $(function() {
           };
           return clock;
         }();
-        */
-
+*/
         /*
         // DTMF Signal
         var lo = [ 697, 770, 852, 941 ];
