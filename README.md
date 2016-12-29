@@ -25,7 +25,7 @@ Then create an osc and connect to the mixer.
 var osc = synth.osc();
 osc.type = function() { return 'sin'; };
 osc.freq = function() { return 440; };
-osc.level = function() { return 1; };
+osc.gain = function() { return 1; };
 mixer.inputs.push(osc.output);
 ```
 
@@ -36,10 +36,10 @@ Therefore it's easy to connect each other.
 var lfo = synth.osc();
 lfo.type = function() { return 'saw'; };
 lfo.freq = function() { return 0.5; };
-lfo.level = function() { return 1; };
+lfo.gain = function() { return 1; };
 var osc = synth.osc();
 osc.type = function() { return 'sin'; };
 osc.freq = function() { return 440 * Math.exp(lfo.output() ); };
-osc.level = function() { return 1; };
+osc.gain = function() { return 1; };
 mixer.inputs.push(osc.output);
 ```

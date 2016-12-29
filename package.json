@@ -1,6 +1,6 @@
 {
   "name": "synthkit",
-  "version": "0.5.0",
+  "version": "0.5.1",
   "description": "simple wave generator",
   "author": "Kazuhiko Arase",
   "main": "synthkit.js",
