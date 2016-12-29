@@ -313,7 +313,6 @@ var synthkit = function() {
 
       var val = 0;
       var state = 'r';
-      var last = { input : 0 };
 
       //TODO
       var speed = 10;
@@ -328,13 +327,10 @@ var synthkit = function() {
         decay : _const(0),
         sustain : _const(1),
         release : _const(0),
-        input : _const(0),
+        on : function() { state = 'a' },
+        off : function() { state = 'r' },
         output : function() { return val; },
         delta : function() {
-          if (last.input != module.input() ) {
-            state = last.input != 0? 'r' : 'a';
-            last.input = module.input();
-          }
           switch(state) {
           case 'a' :
             if (val < 1) {

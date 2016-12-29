@@ -62,7 +62,7 @@ $(function() {
         { id : 'cutoff', type : 'log', label : 'Cutoff',
             min : 20, max : 20000 },
         { id : 'resonance', type : 'log',
-            label : 'Resonance', min : 0.001, max : 1 },
+            label : 'Resonance', min : 1, max : 16 },
         { id : 'eg', type : 'eg', label : 'EG' }
       ],
       settings : {
@@ -71,8 +71,8 @@ $(function() {
         "freq":{"output":440},
         "filter":{"output":"lpf"},
         "cutoff":{"output":440},
-        "resonance":{"output":0.5},
-        "eg":{"a":0,"d":0,"s":1,"r":0}
+        "resonance":{"output":1},
+        "eg":{"a":0,"d":0.5,"s":0.3,"r":0}
       },
       init : function(ui) {
 
@@ -101,22 +101,17 @@ $(function() {
         gain.level = eg.output;
         mixer.inputs.push(gain.output);
 
-/*
+
         var clock = function() {
           var count = 0;
-          var clock = synth.clock(32, 120);
+          var clock = synth.clock(4, 120);
           clock.trigger = function() {
-            if (count % 2 == 0) {
-              eg.input = _const(1);
-            } else if (count % 2 == 1) {
-              eg.input = _const(0);
-            } else {
-            }
+            eg.on();
             count = (count + 1) % clock.beat();
           };
           return clock;
         }();
-*/
+
         /*
         // DTMF Signal
         var lo = [ 697, 770, 852, 941 ];
@@ -126,6 +121,13 @@ $(function() {
         var f2 = hi[~~(i / 4)];
 
          */
+        ui.pad1.on('change', function(event) {
+          if (ui.pad1.data('output')() ) {
+            eg.on();
+          } else {
+            eg.off();
+          }
+        });
         ui.wave.on('change', function(event) {
           var wave = waves[$(event.target).data('output')()];
           filter.input = wave.output;
