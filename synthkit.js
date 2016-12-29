@@ -161,6 +161,10 @@ var synthkit = function() {
         freq : _const(freq || 440),
         gain : _const(gain || 1),
         output : function() {
+          var gain = module.gain();
+          if (gain == 0) {
+            return 0;
+          }
           if (last.type != module.type() ) {
             if (wave != null) {
               wave.dispose();
@@ -171,7 +175,7 @@ var synthkit = function() {
           if (wave.freq != module.freq) {
             wave.freq = module.freq;
           }
-          return wave.output() * module.gain();
+          return wave.output() * gain;
         }
       });
 
@@ -320,7 +324,6 @@ var synthkit = function() {
 
       var val = 0;
       var state = 'r';
-      var last = { input : 0 };
 
       var speed = 10;
       var min = Math.exp(-speed);
@@ -339,10 +342,6 @@ var synthkit = function() {
         input : function() { return 0; },
         output : function() { return val; },
         delta : function() {
-          if (last.input != module.input() ) {
-            state = module.input() != 0? 'a' : 'r';
-            last.input = module.input();
-          }
           switch(state) {
           case 'a' :
             if (val < 1) {

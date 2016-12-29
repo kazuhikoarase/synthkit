@@ -28,12 +28,18 @@ $(function() {
       },
       init : function(ui) {
 
+        var on = false;
+
         var osc = synth.osc();
         osc.type = ui.osc.data('type');
         osc.freq = ui.osc.data('freq');
         osc.gain = function() {
-          return ui.pad1.data('output')() * ui.osc.data('gain')();
+          return on? ui.osc.data('gain')() : 0;
         };
+
+        ui.pad1.on('change', function(event) {
+          on = !!ui.pad1.data('output')();
+        });
 
         mixer.inputs.push(osc.output);
       }
@@ -44,7 +50,7 @@ $(function() {
         { id : 'pad1', type : 'pad', label : 'Pad' },
         { id : 'osc', type : 'osc', label : 'OSC' },
         { id : 'lfo', type : 'osc', label : 'LFO',
-          minFreq : 1/10, maxFreq : 10 },
+          minFreq : 1/30, maxFreq : 100 },
         { id : 'filter', type : 'select', label : 'Filter',
             options : [ 'lpf', 'hpf', 'bpf', 'notch' ] },
         { id : 'cutoff', type : 'log', label : 'Cutoff',
@@ -69,12 +75,6 @@ $(function() {
         eg.decay = ui.eg.data('decay');
         eg.sustain = ui.eg.data('sustain');
         eg.release = ui.eg.data('release');
-        eg.input = ui.pad1.data('output');
-
-        var filter = synth.filter();
-        filter.type = ui.filter.data('output');
-        filter.cutoff = ui.cutoff.data('output');
-        filter.resonance = ui.resonance.data('output');
 
         var lfo = synth.osc();
         lfo.type = ui.lfo.data('type');
@@ -91,7 +91,13 @@ $(function() {
         osc.freq = mod(ui.osc.data('freq') );
         osc.gain = eg.output;
 
-        mixer.inputs.push(osc.output);
+        var filter = synth.filter();
+        filter.type = ui.filter.data('output');
+        filter.cutoff = ui.cutoff.data('output');
+        filter.resonance = ui.resonance.data('output');
+        filter.input = osc.output;
+        
+        mixer.inputs.push(filter.output);
 /*
         var clock = function() {
           var count = 0;
@@ -167,18 +173,26 @@ $(function() {
           return 880 + 500 * fltLfo.output();
         };
 
-        var gain = synth.mixer();
-        gain.inputs.push(wave.output);//lpf.output;
-        gain.gain = _const(1);
-
         var eg = synth.eg();
         eg.attack = _const(0.5);
         eg.decay = _const(1);
         eg.sustain = _const(0.8);
         eg.release = _const(0.9);
-        eg.input = ui.pad1.data('output');
 
+        var gain = synth.mixer();
+        gain.inputs.push(wave.output);//lpf.output;
+        gain.gain = _const(1);
         gain.gain = eg.output;
+        mixer.inputs.push(gain.output);
+
+        ui.pad1.on('change', function(event) {
+          if (ui.pad1.data('output')() ) {
+            eg.on();
+          } else {
+            eg.off();
+          }
+        });
+
 /*
         var eg_delta = eg.delta;
         var cnt = 0;
@@ -197,7 +211,6 @@ $(function() {
         };
 */
 
-        mixer.inputs.push(gain.output);
       }
     }
   ];
