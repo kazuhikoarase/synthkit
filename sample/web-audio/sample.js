@@ -83,7 +83,7 @@ $(function() {
         osc.level = eg.output;
 
         mixer.inputs.push(osc.output);
-
+/*
         var clock = function() {
           var count = 0;
           var clock = synth.clock(4, 120);
@@ -93,7 +93,7 @@ $(function() {
           };
           return clock;
         }();
-
+*/
         /*
         // DTMF Signal
         var lo = [ 697, 770, 852, 941 ];
@@ -129,6 +129,8 @@ $(function() {
         { id : 'pad1', type : 'pad', label : 'Pad' }
       ],
       init : function(ui) {
+
+        var _const = synth._const;
 
 //        var noise = synth.noise();
         var lfo = synth.sh(64);
@@ -199,15 +201,13 @@ $(function() {
   }
 
   var audioCtx = new AudioContext();
-  var synth = synthkit.createSynth();
-  var _const = synth._const;
-  var mixer = synth.mixer();
-  var synthNode = synthkit.createSynthNode(audioCtx, synth, mixer.output);
   var gainNode = audioCtx.createGain();
   gainNode.gain.value = 0.2;
-  synthNode.connect(gainNode);
   gainNode.connect(audioCtx.destination);
 
+  var synth = synthkit.createSynth();
+  var mixer = synth.mixer();
+  synthkit.createSynthNode(audioCtx, synth, mixer.output).connect(gainNode);
   $.each(sampleDefs, function(i, sampleDef) {
     $('BODY').append(synthkit_sample.createSample(sampleDef) );
   });
