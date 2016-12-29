@@ -35,7 +35,7 @@ var synthkit = function() {
     var _2PI = 2 * Math.PI;
 
     var _const = function(val) { return function() { return val; } };
-
+/*
     var gain = function(level) {
 
       var gain = 0;
@@ -62,7 +62,7 @@ var synthkit = function() {
 
       return module;
     };
-
+*/
     var mixer = function(level) {
 
       var module = createModule({
@@ -73,7 +73,7 @@ var synthkit = function() {
           for (var i = 0; i < module.inputs.length; i += 1) {
             val += module.inputs[i]();
           }
-          return val;
+          return val * module.level();
         }
       });
 
@@ -343,6 +343,7 @@ var synthkit = function() {
 
       var val = 0;
       var state = 'r';
+      var last = { input : 0 };
 
       var speed = 10;
       var min = Math.exp(-speed);
@@ -358,8 +359,13 @@ var synthkit = function() {
         release : _const(0),
         on : function() { state = 'a' },
         off : function() { state = 'r' },
+        input : function() { return 0; },
         output : function() { return val; },
         delta : function() {
+          if (last.input != module.input() ) {
+            state = module.input() != 0? 'a' : 'r';
+            last.input = module.input();
+          }
           switch(state) {
           case 'a' :
             if (val < 1) {
@@ -449,7 +455,6 @@ var synthkit = function() {
       Fs : Fs,
       _const : _const,
       delta : delta,
-      gain : gain,
       mixer : mixer,
       sin : sin,
       square : square,

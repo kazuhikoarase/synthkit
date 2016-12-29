@@ -1,6 +1,13 @@
 //
 // synthkit sample and test for Web Audio
 //
+// Copyright (c) 2016 Kazuhiko Arase
+//
+// URL: http://www.d-project.com/
+//
+// Licensed under the MIT license:
+//  http://www.opensource.org/licenses/mit-license.php
+//
 
 $(function() {
 
@@ -13,24 +20,19 @@ $(function() {
       label : 'Simple',
       ui : [
         { id : 'pad1', type : 'pad', label : 'Pad' },
-        { id : 'wave', type : 'select', label : 'Wave',
-          options : [ 'sin', 'square', 'saw', 'triangle', 'noise'] },
-        { id : 'freq', type : 'log', label : 'Freq', min : 20, max : 20000 },
-        { id : 'vol', type : 'liner', label : 'Vol', min : 0, max : 1 }
+        { id : 'osc', type : 'osc', label : 'OSC' }
       ],
       settings : {
         "pad1":{"output":0},
-        "wave":{"output":"sin"},
-        "freq":{"output":440},
-        "vol":{"output":1}
+        "osc":{"type":"square","freq":440,"gain":1}
       },
       init : function(ui) {
 
         var osc = synth.osc();
-        osc.type = ui.wave.data('output');
-        osc.freq = ui.freq.data('output');
+        osc.type = ui.osc.data('type');
+        osc.freq = ui.osc.data('freq');
         osc.level = function() {
-          return ui.pad1.data('output')() * ui.vol.data('output')();
+          return ui.pad1.data('output')() * ui.osc.data('gain')();
         };
 
         mixer.inputs.push(osc.output);
@@ -40,12 +42,9 @@ $(function() {
       label : 'EG Test',
       ui : [
         { id : 'pad1', type : 'pad', label : 'Pad' },
-        { id : 'wave', type : 'select', label : 'Wave',
-            options : [ 'sin', 'square', 'saw', 'triangle', 'noise' ] },
-        { id : 'lfoWave', type : 'select', label : 'Wave',
-            options : [ 'sin', 'square', 'saw', 'triangle', 'noise' ] },
-        { id : 'freq', type : 'log', label : 'Freq',
-            min : 20, max : 20000 },
+        { id : 'osc', type : 'osc', label : 'OSC' },
+        { id : 'lfo', type : 'osc', label : 'LFO',
+          minFreq : 1/10, maxFreq : 10 },
         { id : 'filter', type : 'select', label : 'Filter',
             options : [ 'lpf', 'hpf', 'bpf', 'notch' ] },
         { id : 'cutoff', type : 'log', label : 'Cutoff',
@@ -56,12 +55,12 @@ $(function() {
       ],
       settings : {
         "pad1":{"output":0},
-        "wave":{"output":"square"},
-        "freq":{"output":440},
+        "osc":{"type":"square","freq":440,"gain":1},
+        "lfo":{"type":"sin","freq":20,"gain":0},
         "filter":{"output":"lpf"},
         "cutoff":{"output":440},
         "resonance":{"output":1},
-        "eg":{"a":0,"d":0.5,"s":0.3,"r":0}
+        "eg":{"attack":0,"decay":1,"sustain":0,"release":0}
       },
       init : function(ui) {
 
@@ -77,9 +76,19 @@ $(function() {
         filter.cutoff = ui.cutoff.data('output');
         filter.resonance = ui.resonance.data('output');
 
+        var lfo = synth.osc();
+        lfo.type = ui.lfo.data('type');
+        lfo.freq = ui.lfo.data('freq');
+
+        var mod = function(freq) {
+          return function() {
+            return freq() * Math.exp(lfo.output() * ui.lfo.data('gain')() );
+          };
+        };
+
         var osc = synth.osc();
-        osc.type = ui.wave.data('output');
-        osc.freq = ui.freq.data('output');
+        osc.type = ui.osc.data('type');
+        osc.freq = mod(ui.osc.data('freq') );
         osc.level = eg.output;
 
         mixer.inputs.push(osc.output);
@@ -157,8 +166,9 @@ $(function() {
         lpf.cutoff = function() {
           return 880 + 500 * fltLfo.output();
         };
-        var gain = synth.gain();
-        gain.input = wave.output;//lpf.output;
+
+        var gain = synth.mixer();
+        gain.inputs.push(wave.output);//lpf.output;
         gain.level = _const(1);
 
         var eg = synth.eg();

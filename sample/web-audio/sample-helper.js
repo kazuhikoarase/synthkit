@@ -1,6 +1,13 @@
 //
 // synthkit sample and test for Web Audio
 //
+// Copyright (c) 2016 Kazuhiko Arase
+//
+// URL: http://www.d-project.com/
+//
+// Licensed under the MIT license:
+//  http://www.opensource.org/licenses/mit-license.php
+//
 
 var synthkit_sample = function() {
 
@@ -114,7 +121,7 @@ var synthkit_sample = function() {
 
     var gap = 4;
     var model = { val : -1, valid : false };
-    var r = size / 2 - gap;
+    var r = ~~(size / 2 - gap);
 
     var $knob = createSVGElement('g').
       append(createSVGElement('circle').css('fill', '#000000').
@@ -145,9 +152,9 @@ var synthkit_sample = function() {
       if (model.val != val) {
         model.val = val;
         model.valid = false;
-        $knob.attr('transform',
-          'translate(' + size / 2 + ',' + size / 2 +
-          ') rotate(' + (45 + 270 * val) + ')');
+        var angle = 45 + 270 * Math.max(0, Math.min(val, 1) );
+        $knob.attr('transform', 'translate(' + size / 2 + ',' + size / 2 +
+            ') rotate(' + angle + ')');
         $comp.trigger('change');
       }
     });
@@ -255,44 +262,61 @@ var synthkit_sample = function() {
     return $comp;
   };
 
-  var createEG = function(spec) {
+  var createCombined = function(spec, comps) {
 
-    var $a = createComponent({ id : spec.id + '.a', type : 'liner',
-      label : 'Attack', min : 0, max : 1 });
-    var $d = createComponent({ id : spec.id + '.d', type : 'liner',
-      label : 'Decay', min : 0, max : 1 });
-    var $s = createComponent({ id : spec.id + '.s', type : 'liner',
-      label : 'Sustain', min : 0, max : 1 });
-    var $r = createComponent({ id : spec.id + '.r', type : 'liner',
-      label : 'Release', min : 0, max : 1 });
+    var uiList = [];
+
+    $.each(comps, function(i, comp) {
+      comp._id = comp.id
+      comp.id = spec.id + '.' + comp.id
+      uiList.push(createComponent(comp) );
+    });
 
     var $comp = $('<div></div>').
       css('vertical-align', 'top').
-      css('display', 'inline-block').
-      append($a).append($d).append($s).append($r).
-      append($('<br/>') ).
+      css('display', 'inline-block');
+
+    $.each(uiList, function(i, $ui) {
+      $comp.append($ui).data(comps[i]._id, $ui.data('output') )
+    });
+
+    $comp.append($('<br/>') ).
       append($('<div></div>').
           css('text-align', 'center').
           text(spec.label || spec.id) );
 
-    $comp.data('attack', $a.data('output') ).
-      data('decay', $d.data('output') ).
-      data('sustain', $s.data('output') ).
-      data('release', $r.data('output') );
-
     $comp.data('state', prop(function() {
-      return {
-        a : $a.data('output')(),
-        d : $d.data('output')(),
-        s : $s.data('output')(),
-        r : $r.data('output')() };
+      var state = {};
+      $.each(uiList, function(i, $ui) {
+        state[comps[i]._id] = $ui.data('output')();
+      });
+      return state;
     }, function(state) {
-      $a.data('output')(state.a);
-      $d.data('output')(state.d);
-      $s.data('output')(state.s);
-      $r.data('output')(state.r);
+      $.each(uiList, function(i, $ui) {
+        $ui.data('output')(state[comps[i]._id]);
+      });
     }) );
+
     return $comp;
+  };
+
+  var createOSC = function(spec) {
+    return createCombined(spec, [
+      { id : 'type', type : 'select', label : 'Wave',
+        options : [ 'sin', 'square', 'saw', 'triangle', 'noise'] },
+      { id : 'freq', type : 'log', label : 'Freq',
+          min : spec.minFreq || 20, max : spec.maxFreq || 20000 },
+      { id : 'gain', type : 'liner', label : 'Gain', min : 0, max : 1 }
+    ]);
+  };
+
+  var createEG = function(spec) {
+    return createCombined(spec, [
+      { id : 'attack', type : 'liner', label : 'Attack', min : 0, max : 1 },
+      { id : 'decay', type : 'liner', label : 'Decay', min : 0, max : 1 },
+      { id : 'sustain', type : 'liner', label : 'Sustain', min : 0, max : 1 },
+      { id : 'release', type : 'liner', label : 'Release', min : 0, max : 1 }
+    ]);
   };
 
   var createComponent = function(comp) {
@@ -304,6 +328,8 @@ var synthkit_sample = function() {
       return createKnob(comp);
     case 'select' :
       return createSelect(comp);
+    case 'osc' :
+      return createOSC(comp);
     case 'eg' :
       return createEG(comp);
     default : 
