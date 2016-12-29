@@ -31,7 +31,7 @@ $(function() {
         var osc = synth.osc();
         osc.type = ui.osc.data('type');
         osc.freq = ui.osc.data('freq');
-        osc.level = function() {
+        osc.gain = function() {
           return ui.pad1.data('output')() * ui.osc.data('gain')();
         };
 
@@ -89,7 +89,7 @@ $(function() {
         var osc = synth.osc();
         osc.type = ui.osc.data('type');
         osc.freq = mod(ui.osc.data('freq') );
-        osc.level = eg.output;
+        osc.gain = eg.output;
 
         mixer.inputs.push(osc.output);
 /*
@@ -169,7 +169,7 @@ $(function() {
 
         var gain = synth.mixer();
         gain.inputs.push(wave.output);//lpf.output;
-        gain.level = _const(1);
+        gain.gain = _const(1);
 
         var eg = synth.eg();
         eg.attack = _const(0.5);
@@ -178,7 +178,7 @@ $(function() {
         eg.release = _const(0.9);
         eg.input = ui.pad1.data('output');
 
-        gain.level = eg.output;
+        gain.gain = eg.output;
 /*
         var eg_delta = eg.delta;
         var cnt = 0;

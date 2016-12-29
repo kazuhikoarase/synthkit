@@ -36,21 +36,21 @@ var synthkit = function() {
 
     var _const = function(val) { return function() { return val; } };
 
-    var mixer = function(level) {
+    var mixer = function(gain) {
 
       var module = createModule({
-        level : _const(level || 1),
+        gain : _const(gain || 1),
         inputs : [],
         output : function() {
-          var level = module.level();
-          if (level == 0) {
+          var gain = module.gain();
+          if (gain == 0) {
             return 0;
           }
           var val = 0;
           for (var i = 0; i < module.inputs.length; i += 1) {
             val += module.inputs[i]();
           }
-          return val * level;
+          return val * gain;
         }
       });
 
@@ -144,7 +144,7 @@ var synthkit = function() {
       return module;
     };
 
-    var osc = function(type, freq, level) {
+    var osc = function(type, freq, gain) {
 
       var waves = {
         sin : sin,
@@ -158,8 +158,8 @@ var synthkit = function() {
 
       var module = createModule({
         type : _const(type || WaveFormType.SIN),
-        level : _const(level || 1),
         freq : _const(freq || 440),
+        gain : _const(gain || 1),
         output : function() {
           if (last.type != module.type() ) {
             if (wave != null) {
@@ -171,7 +171,7 @@ var synthkit = function() {
           if (wave.freq != module.freq) {
             wave.freq = module.freq;
           }
-          return wave.output() * module.level();
+          return wave.output() * module.gain();
         }
       });
 
