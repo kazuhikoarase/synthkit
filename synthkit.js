@@ -35,45 +35,22 @@ var synthkit = function() {
     var _2PI = 2 * Math.PI;
 
     var _const = function(val) { return function() { return val; } };
-/*
-    var gain = function(level) {
 
-      var gain = 0;
-      var last = { level : 0 };
-
-      var min = Math.exp(0);
-      var max = Math.exp(1);
-      var range = max - min;
-      var toGain = function(val) {
-        return (Math.exp(Math.max(0, Math.min(val, 1) ) ) - min) / range;
-      };
-
-      var module = createModule({
-        level : _const(level || 1),
-        input : _const(0),
-        output : function() {
-          if (last.level != module.level() ) {
-            gain = toGain(module.level() );
-            last.level = module.level();
-          }
-          return gain != 0? module.input() * gain : 0; 
-        }
-      });
-
-      return module;
-    };
-*/
     var mixer = function(level) {
 
       var module = createModule({
         level : _const(level || 1),
         inputs : [],
         output : function() {
+          var level = module.level();
+          if (level == 0) {
+            return 0;
+          }
           var val = 0;
           for (var i = 0; i < module.inputs.length; i += 1) {
             val += module.inputs[i]();
           }
-          return val * module.level();
+          return val * level;
         }
       });
 
