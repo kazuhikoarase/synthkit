@@ -26,27 +26,14 @@ $(function() {
       },
       init : function(ui) {
 
-        var waves = {
-          sin : synth.sin(),
-          square : synth.square(),
-          saw : synth.saw(),
-          triangle : synth.triangle(),
-          noise : synth.noise()
+        var osc = synth.osc();
+        osc.type = ui.wave.data('output');
+        osc.freq = ui.freq.data('output');
+        osc.level = function() {
+          return ui.pad1.data('output')() * ui.vol.data('output')();
         };
 
-        var gain = synth.gain();
-        gain.level = function() {
-          return ui.vol.data('output')() * ui.pad1.data('output')();
-        };
-
-        mixer.inputs.push(gain.output);
-
-        // setup ui
-        ui.wave.on('change', function(event) {
-          var wave = waves[$(event.target).data('output')()];
-          gain.input = wave.output;
-          wave.freq = ui.freq.data('output');
-        }).trigger('change');
+        mixer.inputs.push(osc.output);
       }
     },
     {
@@ -54,6 +41,8 @@ $(function() {
       ui : [
         { id : 'pad1', type : 'pad', label : 'Pad' },
         { id : 'wave', type : 'select', label : 'Wave',
+            options : [ 'sin', 'square', 'saw', 'triangle', 'noise' ] },
+        { id : 'lfoWave', type : 'select', label : 'Wave',
             options : [ 'sin', 'square', 'saw', 'triangle', 'noise' ] },
         { id : 'freq', type : 'log', label : 'Freq',
             min : 20, max : 20000 },
@@ -76,14 +65,6 @@ $(function() {
       },
       init : function(ui) {
 
-        var waves = {
-          sin : synth.sin(),
-          square : synth.square(),
-          saw : synth.saw(),
-          triangle : synth.triangle(),
-          noise : synth.noise()
-        };
-
         var eg = synth.eg();
         eg.attack = ui.eg.data('attack');
         eg.decay = ui.eg.data('decay');
@@ -96,11 +77,12 @@ $(function() {
         filter.cutoff = ui.cutoff.data('output');
         filter.resonance = ui.resonance.data('output');
 
-        var gain = synth.gain();
-        gain.input = filter.output;
-        gain.level = eg.output;
-        mixer.inputs.push(gain.output);
+        var osc = synth.osc();
+        osc.type = ui.wave.data('output');
+        osc.freq = ui.freq.data('output');
+        osc.level = eg.output;
 
+        mixer.inputs.push(osc.output);
 
         var clock = function() {
           var count = 0;
@@ -117,6 +99,10 @@ $(function() {
         var lo = [ 697, 770, 852, 941 ];
         var hi = [ 1209, 1336, 1477, 1633 ];
         var chars = '147*2580369#ABCD';
+        //147*
+        //2580
+        //369#
+        //ABCD
         var f1 = lo[i % 4];
         var f2 = hi[~~(i / 4)];
 
@@ -128,11 +114,13 @@ $(function() {
             eg.off();
           }
         });
+        /*
         ui.wave.on('change', function(event) {
           var wave = waves[$(event.target).data('output')()];
           filter.input = wave.output;
           wave.freq = ui.freq.data('output');
         }).trigger('change');
+        */
       }
     },
     {

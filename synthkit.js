@@ -13,12 +13,22 @@ var synthkit = function() {
 
   'use strict';
 
+  var WaveFormType = {
+      SIN : 'sin',
+      SQUARE : 'square',
+      SAW : 'saw',
+      TRIANGLE : 'triangle',
+      NOISE : 'noise'
+  };
+
   var BiquadFilterType = {
     LPF : 'lpf',
     HPF : 'hpf',
     BPF : 'bpf',
     NOTCH : 'notch'
   };
+
+  var nop = function() {};
 
   var createSynth = function(Fs) {
 
@@ -40,7 +50,7 @@ var synthkit = function() {
         return (Math.exp(Math.max(0, Math.min(val, 1) ) ) - min) / range;
       };
 
-      var module = {
+      var module = createModule({
         level : _const(level || 1),
         input : _const(0),
         output : function() {
@@ -49,18 +59,15 @@ var synthkit = function() {
             last.level = module.level();
           }
           return gain != 0? module.input() * gain : 0; 
-        },
-        delta : function() {}
-      };
-
-      synth.register(module);
+        }
+      });
 
       return module;
     };
 
     var mixer = function(level) {
 
-      var module = {
+      var module = createModule({
         level : _const(level || 1),
         inputs : [],
         output : function() {
@@ -69,11 +76,8 @@ var synthkit = function() {
             val += module.inputs[i]();
           }
           return val;
-        },
-        delta : function() {}
-      };
-
-      synth.register(module);
+        }
+      });
 
       return module;
     };
@@ -84,14 +88,12 @@ var synthkit = function() {
       var a = 1;
       var _2PI_Fs = _2PI / Fs;
 
-      var module = {
+      var module = createModule({
         freq : _const(freq || 440),
         sync : function() { t = 0; },
         output : function() { return a * Math.sin(t); },
         delta : function() { t = (t + _2PI_Fs * module.freq() ) % _2PI; }
-      };
-
-      synth.register(module);
+      });
 
       return module;
     };
@@ -102,14 +104,12 @@ var synthkit = function() {
       var a = 1;
       var _2_Fs = 2 / Fs;
 
-      var module = {
+      var module = createModule({
         freq : _const(freq || 440),
         sync : function() { t = 0; },
         output : function() { return t < 1? a : -a; },
         delta : function() { t = (t + _2_Fs * module.freq() ) % 2; }
-      };
-
-      synth.register(module);
+      });
 
       return module;
     };
@@ -120,14 +120,12 @@ var synthkit = function() {
       var a = 1;
       var _2_Fs = 2 / Fs;
 
-      var module = {
+      var module = createModule({
         freq : _const(freq || 440),
         sync : function() { t = 1; },
         output : function() { return t * a - a; },
         delta : function() { t = (t + _2_Fs * module.freq() ) % 2; }
-      };
-
-      synth.register(module);
+      });
 
       return module;
     };
@@ -139,15 +137,13 @@ var synthkit = function() {
       var _2a = a * 2;
       var _2_Fs = 2 / Fs;
 
-      var module = {
+      var module = createModule({
         freq : _const(freq || 440),
         sync : function() { t = 0.5; },
         output : function() {
           return (~~t % 2 == 0? t % 1 : 1 - t % 1) * _2a - a; },
         delta : function() { t = (t + _2_Fs * module.freq() ) % 2; }
-      };
-
-      synth.register(module);
+      });
 
       return module;
     };
@@ -159,7 +155,7 @@ var synthkit = function() {
       var _2a = a * 2;
       var update = true;
 
-      var module = {
+      var module = createModule({
         output : function() {
           if (update) {
             val = Math.random() * _2a - a;
@@ -168,9 +164,49 @@ var synthkit = function() {
           return val;
         },
         delta : function() { update = true; }
-      };
+      });
 
-      synth.register(module);
+      return module;
+    };
+
+    var osc = function(type, freq, level) {
+
+      var waves = {
+        sin : sin,
+        square : square,
+        saw : saw,
+        triangle : triangle,
+        noise : noise
+      };
+      var last = { type : null };
+      var wave = null;
+
+      var module = createModule({
+        type : _const(type || WaveFormType.SIN),
+        level : _const(level || 1),
+        freq : _const(freq || 440),
+        output : function() {
+          if (last.type != module.type() ) {
+            if (wave != null) {
+              wave.dispose();
+            }
+            wave = (waves[module.type()] || sin)();
+            last.type = module.type();
+          }
+          if (wave.freq != module.freq) {
+            wave.freq = module.freq;
+          }
+          return wave.output() * module.level();
+        }
+      });
+
+      var module_dispose = module.dispose;
+      module.dispose = function() {
+        if (wave != null) {
+          wave.dispose();
+        }
+        module_dispose();
+      }
 
       return module;
     };
@@ -182,7 +218,7 @@ var synthkit = function() {
       var last = { intT : ~~t };
       var _2_Fs = 2 / Fs;
 
-      var module = {
+      var module = createModule({
         freq : _const(freq || 440),
         input : _const(0),
         sync : function() { t = 0; },
@@ -195,9 +231,7 @@ var synthkit = function() {
           return val;
         },
         delta : function() { t = (t + _2_Fs * module.freq() ) % 2; }
-      };
-
-      synth.register(module);
+      });
 
       return module;
     };
@@ -218,7 +252,7 @@ var synthkit = function() {
 
       var last = { type : '', cutoff : 0, resonance : 0 };
 
-      var module = {
+      var module = createModule({
         type : _const(type || BiquadFilterType.LPF),
         cutoff : _const(cutoff || 440),
         resonance : _const(resonance || 0.5),
@@ -243,9 +277,7 @@ var synthkit = function() {
           _out2 = _out1;
           _out1 = _out0;
         }
-      };
-
-      synth.register(module);
+      });
 
       var prepare = function() {
 
@@ -314,7 +346,6 @@ var synthkit = function() {
       var val = 0;
       var state = 'r';
 
-      //TODO
       var speed = 10;
       var min = Math.exp(-speed);
       var rate = (1 - min) * 1000 / Fs;
@@ -322,7 +353,7 @@ var synthkit = function() {
         return rate * (Math.exp(-speed * val) - min);
       };
 
-      var module = {
+      var module = createModule({
         attack : _const(0),
         decay : _const(0),
         sustain : _const(1),
@@ -353,9 +384,7 @@ var synthkit = function() {
             throw 'state:' + state;
           }
         }
-      };
-
-      synth.register(module);
+      });
 
       return module;
     };
@@ -366,7 +395,7 @@ var synthkit = function() {
       var last = { beat : 0, bpm : 0 };
       var unit = 0;
 
-      var module = {
+      var module = createModule({
         beat : _const(beat || 8),
         bpm : _const(bpm || 120),
         trigger : function(){},
@@ -383,35 +412,47 @@ var synthkit = function() {
           }
           ticks += 1;
         }
-      };
-
-      synth.register(module);
+      });
 
       return module;
     };
-    
+
+    //
+
     var modules = [];
+    var createModule = function(module) {
+      if (typeof module.dispose != 'undefined') {
+        throw 'error';
+      }
+      module.delta = module.delta || nop;
+      module.dispose = function() { unregister(module); };
+      register(module);
+      return module;
+    };
+    var register = function(module) {
+      modules.push(module);
+      console.log('reg#' + modules.length);
+    };
+    var unregister = function(module) {
+      var newModules = [];
+      for (var i = 0; i < modules.length; i += 1) {
+        if (modules[i] != module) {
+          newModules.push(modules[i]);
+        }
+      }
+      modules = newModules;
+      console.log('unreg#' + modules.length);
+    };
+    var delta = function() {
+      for (var i = 0; i < modules.length; i += 1) {
+        modules[i].delta();
+      }
+    };
 
     var synth = {
       Fs : Fs,
       _const : _const,
-      register : function(module) {
-        modules.push(module);
-      },
-      unregister : function(module) {
-        var newModules = [];
-        for (var i = 0; i < modules.length; i += 1) {
-          if (modules[i] != module) {
-            newModules.push(modules[i]);
-          }
-        }
-        modules = newModules;
-      },
-      delta : function() {
-        for (var i = 0; i < modules.length; i += 1) {
-          modules[i].delta();
-        }
-      },
+      delta : delta,
       gain : gain,
       mixer : mixer,
       sin : sin,
@@ -419,6 +460,7 @@ var synthkit = function() {
       saw : saw,
       triangle : triangle,
       noise : noise,
+      osc : osc,
       sh : sampleAndHold,
       filter : biquadFilter,
       eg : envelopeGenerator,
@@ -443,8 +485,9 @@ var synthkit = function() {
   };
 
   return {
-    createSynth : createSynth,
+    WaveFormType : WaveFormType,
     FilterType : BiquadFilterType,
+    createSynth : createSynth,
     createSynthNode : createSynthNode
   };
 }();
