@@ -130,7 +130,7 @@ $(function() {
       ],
       init : function(ui) {
 
-        var _const = synth._const;
+        var _const = function(val) { return function() { return val; } };
 
 //        var noise = synth.noise();
         var lfo = synth.sh(64);

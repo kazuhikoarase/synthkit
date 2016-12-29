@@ -28,8 +28,6 @@ var synthkit = function() {
     NOTCH : 'notch'
   };
 
-  var nop = function() {};
-
   var createSynth = function(Fs) {
 
     var Fs = Fs || 44100;
@@ -424,14 +422,13 @@ var synthkit = function() {
       if (typeof module.dispose != 'undefined') {
         throw 'error';
       }
-      module.delta = module.delta || nop;
+      module.delta = module.delta || function() {};
       module.dispose = function() { unregister(module); };
       register(module);
       return module;
     };
     var register = function(module) {
       modules.push(module);
-      console.log('reg#' + modules.length);
     };
     var unregister = function(module) {
       var newModules = [];
@@ -441,7 +438,6 @@ var synthkit = function() {
         }
       }
       modules = newModules;
-      console.log('unreg#' + modules.length);
     };
     var delta = function() {
       for (var i = 0; i < modules.length; i += 1) {
