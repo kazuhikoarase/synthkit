@@ -185,7 +185,7 @@ var synthkit = function() {
           wave.dispose();
         }
         module_dispose();
-      }
+      };
 
       return module;
     };
@@ -337,8 +337,8 @@ var synthkit = function() {
         decay : _const(0),
         sustain : _const(1),
         release : _const(0),
-        on : function() { state = 'a' },
-        off : function() { state = 'r' },
+        on : function() { state = 'a'; },
+        off : function() { state = 'r'; },
         input : function() { return 0; },
         output : function() { return val; },
         delta : function() {
