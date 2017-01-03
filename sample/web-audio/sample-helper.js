@@ -248,7 +248,6 @@ var synthkit_sample = function() {
       $comp.data('output')(state.output);
     }) );
     var setText = function(text) {
-      var len = text.length;
       var d = '';
       for (var i = 0; i < text.length; i += 1) {
         d += createFontPath(text.charAt(i), i * 6, 2);
@@ -262,14 +261,14 @@ var synthkit_sample = function() {
     return $comp;
   };
 
-  var createCombined = function(spec, comps) {
+  var createCombined = function(spec, subSpecs) {
 
     var uiList = [];
 
-    $.each(comps, function(i, comp) {
-      comp._id = comp.id
-      comp.id = spec.id + '.' + comp.id
-      uiList.push(createComponent(comp) );
+    $.each(subSpecs, function(i, subSpec) {
+      subSpec._id = subSpec.id;
+      subSpec.id = spec.id + '.' + subSpec.id;
+      uiList.push(createComponent(subSpec) );
     });
 
     var $comp = $('<div></div>').
@@ -277,7 +276,7 @@ var synthkit_sample = function() {
       css('display', 'inline-block');
 
     $.each(uiList, function(i, $ui) {
-      $comp.append($ui).data(comps[i]._id, $ui.data('output') )
+      $comp.append($ui).data(subSpecs[i]._id, $ui.data('output') );
     });
 
     $comp.append($('<br/>') ).
@@ -288,12 +287,12 @@ var synthkit_sample = function() {
     $comp.data('state', prop(function() {
       var state = {};
       $.each(uiList, function(i, $ui) {
-        state[comps[i]._id] = $ui.data('output')();
+        state[subSpecs[i]._id] = $ui.data('output')();
       });
       return state;
     }, function(state) {
       $.each(uiList, function(i, $ui) {
-        $ui.data('output')(state[comps[i]._id]);
+        $ui.data('output')(state[subSpecs[i]._id]);
       });
     }) );
 
@@ -319,27 +318,28 @@ var synthkit_sample = function() {
     ]);
   };
 
-  var createComponent = function(comp) {
-    switch(comp.type) {
+  var createComponent = function(spec) {
+    switch(spec.type) {
     case 'pad' :
-      return createPad(comp);
+      return createPad(spec);
     case 'liner' :
     case 'log' :
-      return createKnob(comp);
+      return createKnob(spec);
     case 'select' :
-      return createSelect(comp);
+      return createSelect(spec);
     case 'osc' :
-      return createOSC(comp);
+      return createOSC(spec);
     case 'eg' :
-      return createEG(comp);
+      return createEG(spec);
     default : 
-      throw 'illegal type:' + comp.type; 
+      throw 'illegal type:' + spec.type; 
     }
   };
 
   //-------------------------------------------------------
 
   var createSample = function(sampleDef) {
+
     var ui = {};
 
     var $ui = $('<div></div>').css('margin-bottom', '8px');
@@ -351,13 +351,13 @@ var synthkit_sample = function() {
         on('click', function(event) {
           var settings = '';
           settings += '{';
-          $.each(sampleDef.ui || [], function(i, comp) {
+          $.each(sampleDef.ui || [], function(i, spec) {
             if (i > 0) {
               settings += ',';
             }
             settings += '\n  ' +
-              JSON.stringify(comp.id) + ':' +
-              JSON.stringify(ui[comp.id].data('state')() );
+              JSON.stringify(spec.id) + ':' +
+              JSON.stringify(ui[spec.id].data('state')() );
           });
           settings += '\n}';
           var $tmp = $('<textarea></textarea>').val(settings);
@@ -367,13 +367,13 @@ var synthkit_sample = function() {
           $tmp.remove();
         }) ).append($('<br/>') );
 
-    $.each(sampleDef.ui || [], function(i, comp) {
-      ui[comp.id] = createComponent(comp);
-      var state = (sampleDef.settings || {})[comp.id];
+    $.each(sampleDef.ui || [], function(i, spec) {
+      ui[spec.id] = createComponent(spec);
+      var state = (sampleDef.settings || {})[spec.id];
       if (typeof state != 'undefined') {
-        ui[comp.id].data('state')(state);
+        ui[spec.id].data('state')(state);
       }
-      $ui.append(ui[comp.id]);
+      $ui.append(ui[spec.id]);
     });
 
     sampleDef.init(ui);
@@ -384,7 +384,7 @@ var synthkit_sample = function() {
           JSON.stringify($target.data('state')() ) );
     });
     return $ui;
-  }
+  };
 
   return {
     createSample : createSample
