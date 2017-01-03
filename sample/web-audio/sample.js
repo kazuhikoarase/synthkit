@@ -80,20 +80,20 @@ $(function() {
         lfo.type = ui.lfo.data('type');
         lfo.freq = ui.lfo.data('freq');
 
-        var mod = function(freq) {
+        var mod = function(freq, gain) {
           return function() {
-            return freq() * Math.exp(lfo.output() * ui.lfo.data('gain')() );
+            return freq() * Math.exp(lfo.output() * gain() );
           };
         };
 
         var osc = synth.osc();
         osc.type = ui.osc.data('type');
-        osc.freq = mod(ui.osc.data('freq') );
+        osc.freq = ui.osc.data('freq');
         osc.gain = eg.output;
 
         var filter = synth.filter();
         filter.type = ui.filter.data('output');
-        filter.cutoff = ui.cutoff.data('output');
+        filter.cutoff = mod(ui.cutoff.data('output'), ui.lfo.data('gain') );
         filter.resonance = ui.resonance.data('output');
         filter.input = osc.output;
         
