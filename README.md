@@ -29,7 +29,7 @@ osc.gain = function() { return 1; };
 mixer.inputs.push(osc.output);
 ```
 
-The module's parameters are not privided by value but function.
+The module's parameters are not provided by value but function.
 Therefore it's easy to connect each other.
 
 ```javascript
