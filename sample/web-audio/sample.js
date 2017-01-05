@@ -157,10 +157,16 @@ $(function() {
         //var wave = synth.sin();
 
         wave.freq = function() {
-//          return 880;
-//          return 880 * Math.pow(2, ~~(lfo.output() * 12) / 12);
-          return 2000 * Math.pow(2, ~~(lfo.output() + 1) / 2);
-        };
+          var freq = {};
+          return function() {
+            var f = ~~(lfo.output() + 1);
+            if (!freq[f]) {
+              freq[f] = 2000 * Math.pow(2, f / 2);
+              console.log(f + ',' + freq[f]);
+            }
+            return freq[f];
+          };
+        }();
 
         var hpf = synth.filter(FilterType.HPF, 10);
         hpf.input = wave.output;

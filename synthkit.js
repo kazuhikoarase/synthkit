@@ -237,13 +237,16 @@ var synthkit = function() {
         resonance : _const(resonance || 0.5),
         input : _const(0),
         output : function() {
-          if (last.type != module.type() ||
-              last.cutoff != module.cutoff() ||
-              last.resonance != module.resonance() ) {
-            prepare();
-            last.type = module.type();
-            last.cutoff = module.cutoff();
-            last.resonance = module.resonance();
+          var type = module.type();
+          var cutoff = module.cutoff();
+          var resonance = module.resonance();
+          if (last.type != type ||
+              last.cutoff != cutoff ||
+              last.resonance != resonance) {
+            prepare(type, cutoff, resonance);
+            last.type = type;
+            last.cutoff = cutoff;
+            last.resonance = resonance;
           }
           _in0 = module.input();
           _out0 = _b0 * _in0 + _b1 * _in1 + _b2 * _in2 -
@@ -258,16 +261,16 @@ var synthkit = function() {
         }
       });
 
-      var prepare = function() {
+      var prepare = function(type, cutoff, resonance) {
 
-        var w0 = _2PI_Fs * module.cutoff();
+        var w0 = _2PI_Fs * cutoff;
         var sin_w0 = Math.sin(w0);
         var cos_w0 = Math.cos(w0);
-        var alpha = sin_w0 / (2 * module.resonance() );
+        var alpha = sin_w0 / (2 * resonance);
 
         var a0, a1, a2, b0, b1, b2;
 
-        switch (module.type() ) {
+        switch (type) {
 
         case BiquadFilterType.LPF :
           b0 = (1 - cos_w0) / 2;
