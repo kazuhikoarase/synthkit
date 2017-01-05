@@ -30,11 +30,11 @@ var synthkit = function() {
 
   var createSynth = function(Fs) {
 
-    var Fs = Fs || 44100;
+    Fs = Fs || 44100;
 
     var _2PI = 2 * Math.PI;
 
-    var _const = function(val) { return function() { return val; } };
+    var _const = function(val) { return function() { return val; }; };
 
     var mixer = function(gain) {
 
