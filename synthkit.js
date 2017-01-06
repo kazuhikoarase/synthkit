@@ -131,6 +131,7 @@ var synthkit = function() {
       var update = true;
 
       var module = createModule({
+        sync : function() {},
         output : function() {
           if (update) {
             val = Math.random() * _2a - a;
@@ -160,6 +161,11 @@ var synthkit = function() {
         type : _const(type || WaveFormType.SIN),
         freq : _const(freq || 440),
         gain : _const(gain || 1),
+        sync : function() {
+          if (wave != null) {
+            wave.sync();
+          }
+        },
         output : function() {
           var gain = module.gain();
           if (gain == 0) {
@@ -325,43 +331,58 @@ var synthkit = function() {
 
     var envelopeGenerator = function() {
 
+      var STATE_STOP = '_';
+      var STATE_ATTACK = 'a';
+      var STATE_DECAY = 'd';
+      var STATE_SUSTAIN = 's';
+      var STATE_RELEASE = 'r';
+      
       var val = 0;
-      var state = 'r';
+      var state = STATE_STOP;
 
-      var speed = 10;
-      var min = Math.exp(-speed);
-      var rate = (1 - min) * 1000 / Fs;
-      var toDV = function(val) {
-        return rate * (Math.exp(-speed * val) - min);
-      };
+      var rate = 1000 / Fs;
 
       var module = createModule({
         attack : _const(0),
         decay : _const(0),
         sustain : _const(1),
         release : _const(0),
-        on : function() { state = 'a'; },
-        off : function() { state = 'r'; },
+        on : function() { state = STATE_ATTACK; },
+        off : function() { state = STATE_RELEASE; },
+        onstop : null,
         input : function() { return 0; },
         output : function() { return val; },
         delta : function() {
           switch(state) {
-          case 'a' :
+          case STATE_ATTACK :
             if (val < 1) {
-              val = Math.min(1, val + toDV(module.attack() ) );
+              val = Math.min(1, val + module.attack() * rate);
             } else {
-              state = 'd';
+              state = STATE_DECAY;
             }
             break;
-          case 'd' :
+          case STATE_DECAY :
             if (val > module.sustain() ) {
-              val = Math.max(module.sustain(), val - toDV(module.decay() ) );
+              val = Math.max(module.sustain(), val - module.decay() * rate);
+            } else {
+              state = STATE_SUSTAIN;
             }
             break;
-          case 'r' :
+          case STATE_SUSTAIN :
+            // nothing to do.
+            break;
+          case STATE_RELEASE :
             if (val > 0) {
-              val = Math.max(0, val - toDV(module.release() ) );
+              val = Math.max(0, val - module.release() * rate);
+            } else {
+              state = STATE_STOP;
+              if (module.onstop) {
+                module.onstop();
+              }
             }
+            break;
+          case STATE_STOP :
+            // nothing to do.
             break;
           default :
             throw 'state:' + state;
@@ -381,7 +402,7 @@ var synthkit = function() {
       var module = createModule({
         beat : _const(beat || 8),
         bpm : _const(bpm || 120),
-        trigger : function(){},
+        ontrigger : null,
         sync : function() { ticks = 0; },
         delta : function() {
           if (last.beat != module.beat() || last.bpm != module.bpm() ) {
@@ -390,7 +411,9 @@ var synthkit = function() {
             last.bpm = module.bpm();
           }
           if (ticks % unit == 0) {
-            module.trigger();
+            if (module.ontrigger) {
+              module.ontrigger();
+            }
             ticks = 0;
           }
           ticks += 1;

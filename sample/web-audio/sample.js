@@ -48,7 +48,9 @@ $(function() {
       label : 'EG Test',
       ui : [
         { id : 'pad1', type : 'pad', label : 'Pad' },
-        { id : 'osc', type : 'osc', label : 'OSC' },
+        { id : 'osc1', type : 'osc', label : 'OSC1' },
+        { id : 'osc2', type : 'osc', label : 'OSC2' },
+        { id : 'eg', type : 'eg', label : 'EG' },
         { id : 'lfo', type : 'osc', label : 'LFO',
           minFreq : 1/30, maxFreq : 100 },
         { id : 'filter', type : 'select', label : 'Filter',
@@ -56,59 +58,91 @@ $(function() {
         { id : 'cutoff', type : 'log', label : 'Cutoff',
             min : 20, max : 20000 },
         { id : 'resonance', type : 'log',
-            label : 'Resonance', min : 1, max : 16 },
-        { id : 'eg', type : 'eg', label : 'EG' }
+            label : 'Resonance', min : 1, max : 16 }
       ],
       settings : {
         "pad1":{"output":0},
-        "osc":{"type":"square","freq":440,"gain":1},
-        "lfo":{"type":"sin","freq":20,"gain":0},
+        "osc1":{"type":"square","freq":490,"gain":0.3},
+        "osc2":{"type":"triangle","freq":336,"gain":0.3},
+        "eg":{"attack":1,"decay":0,"sustain":1,"release":0.001},
+        "lfo":{"type":"sin","freq":8,"gain":0.6},
         "filter":{"output":"lpf"},
-        "cutoff":{"output":440},
-        "resonance":{"output":1},
-        "eg":{"attack":0,"decay":1,"sustain":0,"release":0}
+        "cutoff":{"output":695},
+        "resonance":{"output":10}
       },
       init : function(ui) {
 
-        var eg = synth.eg();
-        eg.attack = ui.eg.data('attack');
-        eg.decay = ui.eg.data('decay');
-        eg.sustain = ui.eg.data('sustain');
-        eg.release = ui.eg.data('release');
-
-        var lfo = synth.osc();
-        lfo.type = ui.lfo.data('type');
-        lfo.freq = ui.lfo.data('freq');
-
-        var mod = function(freq, gain) {
-          return function() {
-            return freq() * Math.exp(lfo.output() * gain() );
+        var mysynth = function() {
+          var osc1 = synth.osc();
+          var osc2 = synth.osc();
+          var eg = synth.eg();
+          var mixer = synth.mixer();
+          mixer.inputs.push(osc1.output);
+          mixer.inputs.push(osc2.output);
+          mixer.gain = eg.output;
+          var lfo = synth.osc();
+          var filter = synth.filter();
+          filter.input = mixer.output;
+          return {
+            osc1 : osc1,
+            osc2 : osc2,
+            eg : eg,
+            lfo : lfo,
+            filter : filter
           };
-        };
+        }();
 
-        var osc = synth.osc();
-        osc.type = ui.osc.data('type');
-        osc.freq = ui.osc.data('freq');
-        osc.gain = eg.output;
+        mixer.inputs.push(mysynth.filter.output);
 
-        var filter = synth.filter();
-        filter.type = ui.filter.data('output');
-        filter.cutoff = mod(ui.cutoff.data('output'), ui.lfo.data('gain') );
-        filter.resonance = ui.resonance.data('output');
-        filter.input = osc.output;
-        
-        mixer.inputs.push(filter.output);
-/*
+        /*
         var clock = function() {
           var count = 0;
           var clock = synth.clock(4, 120);
           clock.trigger = function() {
-            eg.on();
+            mysynth.eg.on();
             count = (count + 1) % clock.beat();
           };
           return clock;
         }();
 */
+
+        
+        var mod = function(freq) {
+          return function() {
+            return freq() * Math.exp(mysynth.lfo.output() );
+          };
+        };
+
+        mysynth.osc1.type = ui.osc1.data('type');
+        mysynth.osc1.freq = ui.osc1.data('freq');
+        mysynth.osc1.gain = ui.osc1.data('gain');
+
+        mysynth.osc2.type = ui.osc2.data('type');
+        mysynth.osc2.freq = ui.osc2.data('freq');
+        mysynth.osc2.gain = ui.osc2.data('gain');
+
+        mysynth.eg.attack = ui.eg.data('attack');
+        mysynth.eg.decay = ui.eg.data('decay');
+        mysynth.eg.sustain = ui.eg.data('sustain');
+        mysynth.eg.release = ui.eg.data('release');
+
+        mysynth.lfo.type = ui.lfo.data('type');
+        mysynth.lfo.freq = ui.lfo.data('freq');
+        mysynth.lfo.gain = ui.lfo.data('gain');
+
+        mysynth.filter.type = ui.filter.data('output');
+        mysynth.filter.cutoff = mod(ui.cutoff.data('output') );
+        mysynth.filter.resonance = ui.resonance.data('output');
+
+        ui.pad1.on('change', function(event) {
+          if (ui.pad1.data('output')() ) {
+            mysynth.lfo.sync();
+            mysynth.eg.on();
+          } else {
+            mysynth.eg.off();
+          }
+        });
+
         /*
         // DTMF Signal
         var lo = [ 697, 770, 852, 941 ];
@@ -122,13 +156,6 @@ $(function() {
         var f2 = hi[~~(i / 4)];
 
          */
-        ui.pad1.on('change', function(event) {
-          if (ui.pad1.data('output')() ) {
-            eg.on();
-          } else {
-            eg.off();
-          }
-        });
         /*
         ui.wave.on('change', function(event) {
           var wave = waves[$(event.target).data('output')()];
@@ -145,7 +172,7 @@ $(function() {
       ],
       init : function(ui) {
 
-        var _const = function(val) { return function() { return val; } };
+        var _const = function(val) { return function() { return val; }; };
 
 //        var noise = synth.noise();
         var lfo = synth.sh(64);

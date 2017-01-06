@@ -173,14 +173,15 @@ var synthkit_sample = function() {
       var outputCache = 0;
       var lmin = Math.log(spec.min);
       var lmax = Math.log(spec.max);
+      var offset = spec.offset || 0;
       $comp.data('output', prop(function() {
         if (!model.valid) {
-          outputCache = Math.exp(lmin + (lmax - lmin) * val() );
+          outputCache = Math.exp(lmin + (lmax - lmin) * val() ) + offset;
           model.valid = true;
         }
         return outputCache;
       }, function(output) {
-        val( (Math.log(output) - lmin) / (lmax - lmin) );
+        val( (Math.log(output - offset) - lmin) / (lmax - lmin) );
       }) );
     }
     $comp.data('state', prop(function() {
@@ -300,21 +301,35 @@ var synthkit_sample = function() {
   };
 
   var createOSC = function(spec) {
+    var offset = -0.25;
+    var min = -offset;
+    var max = 1 - offset;
     return createCombined(spec, [
       { id : 'type', type : 'select', label : 'Wave',
         options : [ 'sin', 'square', 'saw', 'triangle', 'noise'] },
       { id : 'freq', type : 'log', label : 'Freq',
-          min : spec.minFreq || 20, max : spec.maxFreq || 20000 },
-      { id : 'gain', type : 'liner', label : 'Gain', min : 0, max : 1 }
+        min : spec.minFreq || 20, max : spec.maxFreq || 20000 },
+      { id : 'gain', type : 'log', label : 'Gain',
+        min : min, max : max, offset : offset }
     ]);
   };
 
   var createEG = function(spec) {
+    var offset = -0.25;
+    var min = -offset;
+    var max = 1 - offset;
+    var offset_r = -0.000025;
+    var min_r = 1 - offset_r;
+    var max_r = -offset_r;
     return createCombined(spec, [
-      { id : 'attack', type : 'liner', label : 'Attack', min : 0, max : 1 },
-      { id : 'decay', type : 'liner', label : 'Decay', min : 0, max : 1 },
-      { id : 'sustain', type : 'liner', label : 'Sustain', min : 0, max : 1 },
-      { id : 'release', type : 'liner', label : 'Release', min : 0, max : 1 }
+      { id : 'attack', type : 'log', label : 'Attack',
+        min : min_r, max : max_r, offset : offset_r },
+      { id : 'decay', type : 'log', label : 'Decay',
+        min : min_r, max : max_r, offset : offset_r },
+      { id : 'sustain', type : 'log', label : 'Sustain',
+        min : min, max : max, offset : offset },
+      { id : 'release', type : 'log', label : 'Release',
+          min : min_r, max : max_r, offset : offset_r }
     ]);
   };
 
