@@ -64,7 +64,7 @@ $(function() {
         "pad1":{"output":0},
         "osc1":{"type":"square","freq":490,"gain":0.3},
         "osc2":{"type":"triangle","freq":336,"gain":0.3},
-        "eg":{"attack":1,"decay":0,"sustain":1,"release":0.001},
+        "eg":{"attack":1,"decay":1,"sustain":1,"release":1},
         "lfo":{"type":"sin","freq":8,"gain":0.6},
         "filter":{"output":"lpf"},
         "cutoff":{"output":695},
@@ -94,19 +94,16 @@ $(function() {
 
         mixer.inputs.push(mysynth.filter.output);
 
-        /*
         var clock = function() {
           var count = 0;
           var clock = synth.clock(4, 120);
-          clock.trigger = function() {
-            mysynth.eg.on();
+          clock.ontrigger = function() {
+//            mysynth.eg.on();
             count = (count + 1) % clock.beat();
           };
           return clock;
         }();
-*/
 
-        
         var mod = function(freq) {
           return function() {
             return freq() * Math.exp(mysynth.lfo.output() );
@@ -134,6 +131,10 @@ $(function() {
         mysynth.filter.cutoff = mod(ui.cutoff.data('output') );
         mysynth.filter.resonance = ui.resonance.data('output');
 
+        mysynth.osc1.freq = mod(ui.osc1.data('freq') );
+        mysynth.osc2.freq = mod(ui.osc2.data('freq') );
+        mysynth.filter.cutoff = mod(ui.cutoff.data('output') );
+        
         ui.pad1.on('change', function(event) {
           if (ui.pad1.data('output')() ) {
             mysynth.lfo.sync();

@@ -56,3 +56,40 @@ $(function() {
 
   $('BODY').append($cv);
 });
+
+$(function() {
+
+  'use strict';
+
+  var width = 100;
+  var height = 100;
+  var $cv = $('<canvas></canvas>').attr({ width: width, height: height });
+  var ctx = $cv[0].getContext('2d');
+  ctx.fillStyle = 'rgba(0,0,0,1)';
+  ctx.fillRect(0,0,width,height);
+
+  var n = 2;
+  var exp = function(n) {
+    return function(x) {
+      return (Math.exp(x * n) - 1) / (Math.exp(n) - 1);
+    };
+  };
+  var f = exp(10);
+console.log(f(0.5));
+  ctx.beginPath();
+  ctx.strokeStyle = '#ffffff';
+  for (var _x = 0; _x <= 1; _x += 0.01) {
+    var _y = f(_x);
+    var x = ~~(width * _x);
+    var y = ~~(height * (1 - _y) );
+    if (_x == 0) {
+      ctx.moveTo(x, y);
+    } else {
+      ctx.lineTo(x, y);
+    }
+  }
+  ctx.stroke();
+
+
+  $('BODY').append($cv);
+});

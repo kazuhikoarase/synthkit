@@ -318,7 +318,7 @@ var synthkit_sample = function() {
     var offset = -0.25;
     var min = -offset;
     var max = 1 - offset;
-    var offset_r = -0.000025;
+    var offset_r = -0.25;
     var min_r = 1 - offset_r;
     var max_r = -offset_r;
     return createCombined(spec, [

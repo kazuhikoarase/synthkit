@@ -257,6 +257,7 @@ var synthkit = function() {
           _in0 = module.input();
           _out0 = _b0 * _in0 + _b1 * _in1 + _b2 * _in2 -
             _a1 * _out1 - _a2 * _out2;
+          _out0 = Math.max(-1, Math.min(_out0, 1) );
           return _out0;
         },
         delta : function() {
@@ -336,16 +337,18 @@ var synthkit = function() {
       var STATE_DECAY = 'd';
       var STATE_SUSTAIN = 's';
       var STATE_RELEASE = 'r';
-      
+
       var val = 0;
       var state = STATE_STOP;
+      var rate = 1000 / (2 * Math.PI * Fs);
 
-      var rate = 1000 / Fs;
+      var minLvl = 0;
+      var maxLvl = 1;
 
       var module = createModule({
         attack : _const(0),
         decay : _const(0),
-        sustain : _const(1),
+        sustain : _const(maxLvl),
         release : _const(0),
         on : function() { state = STATE_ATTACK; },
         off : function() { state = STATE_RELEASE; },
@@ -355,15 +358,15 @@ var synthkit = function() {
         delta : function() {
           switch(state) {
           case STATE_ATTACK :
-            if (val < 1) {
-              val = Math.min(1, val + module.attack() * rate);
+            if (val < maxLvl) {
+              val += (maxLvl - val) * module.attack() * rate;
             } else {
               state = STATE_DECAY;
             }
             break;
           case STATE_DECAY :
             if (val > module.sustain() ) {
-              val = Math.max(module.sustain(), val - module.decay() * rate);
+              val += (module.sustain() - val) * module.decay() * rate;
             } else {
               state = STATE_SUSTAIN;
             }
@@ -372,8 +375,8 @@ var synthkit = function() {
             // nothing to do.
             break;
           case STATE_RELEASE :
-            if (val > 0) {
-              val = Math.max(0, val - module.release() * rate);
+            if (val > minLvl) {
+              val += (minLvl - val) * module.release() * rate;
             } else {
               state = STATE_STOP;
               if (module.onstop) {
