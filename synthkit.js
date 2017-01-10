@@ -363,7 +363,6 @@ var synthkit = function() {
               val += (maxLvl - val) * module.attack() * rate;
             } else {
               state = STATE_DECAY;
-              console.log('change state:' + state);
             }
             break;
           case STATE_DECAY :
@@ -371,7 +370,6 @@ var synthkit = function() {
               val += (module.sustain() - val) * module.decay() * rate;
             } else {
               state = STATE_SUSTAIN;
-              console.log('change state:' + state);
             }
             break;
           case STATE_SUSTAIN :
@@ -382,7 +380,6 @@ var synthkit = function() {
               val += (minLvl - val) * module.release() * rate;
             } else {
               state = STATE_STOP;
-              console.log('change state:' + state);
               if (module.onstop) {
                 module.onstop();
               }
