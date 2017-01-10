@@ -340,10 +340,11 @@ var synthkit = function() {
 
       var val = 0;
       var state = STATE_STOP;
-      var rate = 1000 / (2 * Math.PI * Fs);
+      var rate = 100 * _2PI / Fs;
 
       var minLvl = 0;
       var maxLvl = 1;
+      var gap = 0.0001;
 
       var module = createModule({
         attack : _const(0),
@@ -358,27 +359,30 @@ var synthkit = function() {
         delta : function() {
           switch(state) {
           case STATE_ATTACK :
-            if (val < maxLvl) {
+            if (val < maxLvl - gap) {
               val += (maxLvl - val) * module.attack() * rate;
             } else {
               state = STATE_DECAY;
+              console.log('change state:' + state);
             }
             break;
           case STATE_DECAY :
-            if (val > module.sustain() ) {
+            if (val > module.sustain() + gap) {
               val += (module.sustain() - val) * module.decay() * rate;
             } else {
               state = STATE_SUSTAIN;
+              console.log('change state:' + state);
             }
             break;
           case STATE_SUSTAIN :
             // nothing to do.
             break;
           case STATE_RELEASE :
-            if (val > minLvl) {
+            if (val > minLvl + gap) {
               val += (minLvl - val) * module.release() * rate;
             } else {
               state = STATE_STOP;
+              console.log('change state:' + state);
               if (module.onstop) {
                 module.onstop();
               }

@@ -64,7 +64,7 @@ $(function() {
         "pad1":{"output":0},
         "osc1":{"type":"square","freq":490,"gain":0.3},
         "osc2":{"type":"triangle","freq":336,"gain":0.3},
-        "eg":{"attack":1,"decay":1,"sustain":1,"release":1},
+        "eg":{"attack":1,"decay":1,"sustain":0,"release":1},
         "lfo":{"type":"sin","freq":8,"gain":0.6},
         "filter":{"output":"lpf"},
         "cutoff":{"output":695},
