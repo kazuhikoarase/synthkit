@@ -344,7 +344,7 @@ var synthkit = function() {
 
       var minLvl = 0;
       var maxLvl = 1;
-      var gap = 0.0001;
+      var offset = 0.0001;
 
       var module = createModule({
         attack : _const(0),
@@ -359,14 +359,14 @@ var synthkit = function() {
         delta : function() {
           switch(state) {
           case STATE_ATTACK :
-            if (val < maxLvl - gap) {
+            if (val < maxLvl - offset) {
               val += (maxLvl - val) * module.attack() * rate;
             } else {
               state = STATE_DECAY;
             }
             break;
           case STATE_DECAY :
-            if (val > module.sustain() + gap) {
+            if (val > module.sustain() + offset) {
               val += (module.sustain() - val) * module.decay() * rate;
             } else {
               state = STATE_SUSTAIN;
@@ -376,7 +376,7 @@ var synthkit = function() {
             // nothing to do.
             break;
           case STATE_RELEASE :
-            if (val > minLvl + gap) {
+            if (val > minLvl + offset) {
               val += (minLvl - val) * module.release() * rate;
             } else {
               state = STATE_STOP;
