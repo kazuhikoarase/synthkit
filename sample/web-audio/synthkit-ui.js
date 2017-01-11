@@ -81,7 +81,7 @@
   var createPad = function(spec) {
 
     var size = 50;
-    var $comp = createBase(50, spec);
+    var $comp = createBase(size, spec);
 
     var gap = 4;
     var model = { on : false };
@@ -119,7 +119,7 @@
   var createKnob = function(spec) {
 
     var size = 50;
-    var $comp = createBase(50, spec);
+    var $comp = createBase(size, spec);
 
     var gap = 4;
     var model = { val : -1, valid : false, output : 0 };
@@ -210,7 +210,7 @@
   var createSelect = function(spec) {
 
     var size = 50;
-    var $comp = createBase(50, spec);
+    var $comp = createBase(size, spec);
 
     var selectedIndex = 0;
     var options = [];
@@ -270,6 +270,70 @@
 
     setText(options[selectedIndex].label);
 
+    return $comp;
+  };
+
+  var createSeq = function(spec) {
+
+    var size = 80;
+    var $comp = createBase(size, spec);
+
+    var numSteps = 16;
+    var numNotes = 16;
+    var padSize = 4;
+    var hgap = (size - padSize * numSteps) / 2;
+    var vgap = (size - padSize * numNotes) / 2;
+
+    var createPad = function(s, n) {
+      var noteonColor = '#ffffff';
+      var noteoffColor = '#000000';
+      var $pad = createSVGElement('rect').css('fill', noteoffColor).
+        css('stroke', '#666666').attr({
+          x : hgap + s * padSize,
+          y : vgap + (numNotes - n) * padSize,
+          width : padSize, height :padSize }).
+        on('mousedown', function(event) {
+          event.preventDefault();
+          $pad.css('fill', noteonColor);
+          model.current = n;
+          $(document).on('mouseup', pad_mouseupHandler);
+          $comp.trigger('change');
+        }).data('update', function() {
+          $pad.css('fill', model.pattern[s] == n? noteonColor : noteoffColor);
+        });
+      var pad_mouseupHandler = function(event) {
+        model.pattern[s] = (model.pattern[s] == n)? 0 : n;
+        model.current = 0;
+        updatePads();
+        $(document).off('mouseup', pad_mouseupHandler);
+        $comp.trigger('change');
+      };
+      return $pad;
+    };
+    var updatePads = function() {
+      for (var i = 0; i < padList.length; i += 1) {
+        padList[i].data('update')();
+      }
+    };
+    var padList = [];
+    var model = { pattern : [], current : 0 };
+    for (var s = 0; s < numSteps; s += 1) {
+      for (var n = 1; n <= numNotes; n += 1) {
+        var $pad = createPad(s, n);
+        padList.push($pad);
+        $comp.append($pad);
+      }
+      model.pattern.push(0);
+    }
+    $comp.data('state', prop(function() {
+      return { pattern : model.pattern.slice(0), current : model.current };
+    }, function(state) {
+      var pattern = state.pattern || [];
+      for (var i = 0; i < pattern.length; i += 1) {
+        model.pattern[i] = pattern[i];
+      }
+      updatePads();
+    }) );
     return $comp;
   };
 
@@ -371,6 +435,8 @@
       return createOSC(spec);
     case 'eg' :
       return createEG(spec);
+    case 'seq' :
+      return createSeq(spec);
     default : 
       throw 'illegal type:' + spec.type; 
     }
@@ -416,7 +482,7 @@
       $ui.append(ui[spec.id]);
     });
 
-    uiDef.init(ui);
+    uiDef.init.call(uiDef, ui);
     $ui.on('change', function(event) {
       var $target = $(event.target);
       if (synthkit.debug) {

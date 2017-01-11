@@ -34,12 +34,19 @@ var synthkit = function() {
 
     var _2PI = 2 * Math.PI;
 
-    var _const = function(val) { return function() { return val; }; };
+    var prop = function(val) {
+      return function() {
+        if (arguments.length == 1) {
+          val = arguments[0];
+        }
+        return val;
+      };
+    };
 
     var mixer = function(gain) {
 
       var module = createModule({
-        gain : _const(gain || 1),
+        gain : prop(gain || 1),
         inputs : [],
         output : function() {
           var gain = module.gain();
@@ -64,7 +71,7 @@ var synthkit = function() {
       var _2PI_Fs = _2PI / Fs;
 
       var module = createModule({
-        freq : _const(freq || 440),
+        freq : prop(freq || 440),
         sync : function() { t = 0; },
         output : function() { return a * Math.sin(t); },
         delta : function() { t = (t + _2PI_Fs * module.freq() ) % _2PI; }
@@ -80,7 +87,7 @@ var synthkit = function() {
       var _2_Fs = 2 / Fs;
 
       var module = createModule({
-        freq : _const(freq || 440),
+        freq : prop(freq || 440),
         sync : function() { t = 0; },
         output : function() { return t < 1? a : -a; },
         delta : function() { t = (t + _2_Fs * module.freq() ) % 2; }
@@ -96,7 +103,7 @@ var synthkit = function() {
       var _2_Fs = 2 / Fs;
 
       var module = createModule({
-        freq : _const(freq || 440),
+        freq : prop(freq || 440),
         sync : function() { t = 1; },
         output : function() { return t * a - a; },
         delta : function() { t = (t + _2_Fs * module.freq() ) % 2; }
@@ -113,7 +120,7 @@ var synthkit = function() {
       var _2_Fs = 2 / Fs;
 
       var module = createModule({
-        freq : _const(freq || 440),
+        freq : prop(freq || 440),
         sync : function() { t = 0.5; },
         output : function() {
           return (~~t % 2 == 0? t % 1 : 1 - t % 1) * _2a - a; },
@@ -158,9 +165,9 @@ var synthkit = function() {
       var wave = null;
 
       var module = createModule({
-        type : _const(type || WaveFormType.SIN),
-        freq : _const(freq || 440),
-        gain : _const(gain || 1),
+        type : prop(type || WaveFormType.SIN),
+        freq : prop(freq || 440),
+        gain : prop(gain || 1),
         sync : function() {
           if (wave != null) {
             wave.sync();
@@ -204,8 +211,8 @@ var synthkit = function() {
       var _2_Fs = 2 / Fs;
 
       var module = createModule({
-        freq : _const(freq || 440),
-        input : _const(0),
+        freq : prop(freq || 440),
+        input : prop(0),
         sync : function() { t = 0; },
         output : function() { 
           var intT = ~~t;
@@ -238,10 +245,10 @@ var synthkit = function() {
       var last = { type : '', cutoff : 0, resonance : 0 };
 
       var module = createModule({
-        type : _const(type || BiquadFilterType.LPF),
-        cutoff : _const(cutoff || 440),
-        resonance : _const(resonance || 0.5),
-        input : _const(0),
+        type : prop(type || BiquadFilterType.LPF),
+        cutoff : prop(cutoff || 440),
+        resonance : prop(resonance || 0.5),
+        input : prop(0),
         output : function() {
           var type = module.type();
           var cutoff = module.cutoff();
@@ -347,10 +354,10 @@ var synthkit = function() {
       var offset = 0.0001;
 
       var module = createModule({
-        attack : _const(0),
-        decay : _const(0),
-        sustain : _const(maxLvl),
-        release : _const(0),
+        attack : prop(0),
+        decay : prop(0),
+        sustain : prop(maxLvl),
+        release : prop(0),
         on : function() { state = STATE_ATTACK; },
         off : function() { state = STATE_RELEASE; },
         onstop : null,
@@ -379,6 +386,7 @@ var synthkit = function() {
             if (val > minLvl + offset) {
               val += (minLvl - val) * module.release() * rate;
             } else {
+              val = minLvl;
               state = STATE_STOP;
               if (module.onstop) {
                 module.onstop();
@@ -404,8 +412,8 @@ var synthkit = function() {
       var unit = 0;
 
       var module = createModule({
-        beat : _const(beat || 8),
-        bpm : _const(bpm || 120),
+        beat : prop(beat || 8),
+        bpm : prop(bpm || 120),
         ontrigger : null,
         sync : function() { ticks = 0; },
         delta : function() {
@@ -466,7 +474,7 @@ var synthkit = function() {
     var synth = {
       debug : false,
       Fs : Fs,
-      _const : _const,
+      prop : prop,
       delta : delta,
       mixer : mixer,
       sin : sin,
@@ -484,9 +492,10 @@ var synthkit = function() {
     return synth;
   };
 
-  var createSynthNode = function(audioCtx, synth, output) {
+  var createSynthNode = function(audioCtx, synth, output, bufferSize) {
+    bufferSize = bufferSize || 8192;
     // no input, single output.
-    var scriptNode = audioCtx.createScriptProcessor(4096, 0, 1);
+    var scriptNode = audioCtx.createScriptProcessor(bufferSize, 0, 1);
     scriptNode.onaudioprocess = function(event) {
       var outputBuffer = event.outputBuffer;
       var outputData = outputBuffer.getChannelData(0);

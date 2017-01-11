@@ -7,7 +7,7 @@ $(function() {
   'use strict';
 
   var synth = synthkit.createSynth();
-  var _const = synth._const;
+  var prop = synth.prop;
   var Fs = synth.Fs;
 
   var waves = [
@@ -33,7 +33,7 @@ $(function() {
   ctx.fillRect(0,0,width,height);
 
   for (var w = 0; w < waves.length; w += 1) {
-    waves[w].freq = _const(1);
+    waves[w].freq = prop(1);
   }
 
   for (var w = waves.length - 1; w >= 0; w -= 1) {

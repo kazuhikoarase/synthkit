@@ -15,7 +15,13 @@ $(function() {
 
   var FilterType = synthkit.FilterType;
 
-  var sampleDefs = [
+  var scale = [0, 2, 4, 5, 7, 9, 11, 12];
+  var getFreqByNote = function(note) {
+    var n = note - 1 + 8;
+    return Math.pow(2, scale[n % 8] / 12) * 440 * ~~(n / 8);
+  };
+
+  var synthDefs = [
     {
       label : 'Simple',
       ui : [
@@ -42,131 +48,6 @@ $(function() {
         });
 
         mixer.inputs.push(osc.output);
-      }
-    },
-    {
-      label : 'EG Test',
-      ui : [
-        { id : 'pad1', type : 'pad', label : 'Pad' },
-        { id : 'osc1', type : 'osc', label : 'OSC1' },
-        { id : 'osc2', type : 'osc', label : 'OSC2' },
-        { id : 'eg', type : 'eg', label : 'EG' },
-        { id : 'lfo', type : 'osc', label : 'LFO',
-          minFreq : 1/30, maxFreq : 100 },
-        { id : 'filter', type : 'select', label : 'Filter',
-            options : [ 'lpf', 'hpf', 'bpf', 'notch' ] },
-        { id : 'cutoff', type : 'log', label : 'Cutoff',
-            min : 20, max : 20000 },
-        { id : 'resonance', type : 'log',
-            label : 'Resonance', min : 1, max : 16 }
-      ],
-      settings : {
-        "pad1":{"output":0},
-        "osc1":{"type":"square","freq":439.99999999999983,"gain":0.2785431093456766},
-        "osc2":{"type":"noise","freq":513.683392440327,"gain":0},
-        "eg":{"attack":1,"decay":0.10459856467414358,"sustain":0,"release":1},
-        "lfo":{"type":"saw","freq":2.9682986280386467,"gain":0},
-        "filter":{"output":"lpf"},
-        "cutoff":{"output":1557.1719937932373},
-        "resonance":{"output":7.526382511320843}
-      },
-      init : function(ui) {
-
-        var mysynth = function() {
-          var osc1 = synth.osc();
-          var osc2 = synth.osc();
-          var eg = synth.eg();
-          var mixer = synth.mixer();
-          mixer.inputs.push(osc1.output);
-          mixer.inputs.push(osc2.output);
-          mixer.gain = eg.output;
-          var lfo = synth.osc();
-          var filter = synth.filter();
-          filter.input = mixer.output;
-          return {
-            osc1 : osc1,
-            osc2 : osc2,
-            eg : eg,
-            lfo : lfo,
-            filter : filter
-          };
-        }();
-
-        mixer.inputs.push(mysynth.filter.output);
-
-        !function() {
-          var count = 0;
-          var clock = synth.clock(16, 120);
-          clock.ontrigger = function() {
-            if (count % 4 == 0) {
-              mysynth.lfo.sync();
-              ui.osc1.data('freq')(count == 0? 880 :  440);
-              mysynth.eg.on();
-            }
-            count = (count + 1) % clock.beat();
-          };
-        }();
-
-        var mod = function(freq) {
-          return function() {
-            return freq() * Math.exp(mysynth.lfo.output() );
-          };
-        };
-
-        mysynth.osc1.type = ui.osc1.data('type');
-        mysynth.osc1.freq = ui.osc1.data('freq');
-        mysynth.osc1.gain = ui.osc1.data('gain');
-
-        mysynth.osc2.type = ui.osc2.data('type');
-        mysynth.osc2.freq = ui.osc2.data('freq');
-        mysynth.osc2.gain = ui.osc2.data('gain');
-
-        mysynth.eg.attack = ui.eg.data('attack');
-        mysynth.eg.decay = ui.eg.data('decay');
-        mysynth.eg.sustain = ui.eg.data('sustain');
-        mysynth.eg.release = ui.eg.data('release');
-
-        mysynth.lfo.type = ui.lfo.data('type');
-        mysynth.lfo.freq = ui.lfo.data('freq');
-        mysynth.lfo.gain = ui.lfo.data('gain');
-
-        mysynth.filter.type = ui.filter.data('output');
-        mysynth.filter.cutoff = mod(ui.cutoff.data('output') );
-        mysynth.filter.resonance = ui.resonance.data('output');
-
-        mysynth.osc1.freq = mod(ui.osc1.data('freq') );
-        mysynth.osc2.freq = mod(ui.osc2.data('freq') );
-        mysynth.filter.cutoff = mod(ui.cutoff.data('output') );
-        
-        ui.pad1.on('change', function(event) {
-          if (ui.pad1.data('output')() ) {
-            mysynth.lfo.sync();
-            mysynth.eg.on();
-          } else {
-            mysynth.eg.off();
-          }
-        });
-
-        /*
-        // DTMF Signal
-        var lo = [ 697, 770, 852, 941 ];
-        var hi = [ 1209, 1336, 1477, 1633 ];
-        var chars = '147*2580369#ABCD';
-        //147*
-        //2580
-        //369#
-        //ABCD
-        var f1 = lo[i % 4];
-        var f2 = hi[~~(i / 4)];
-
-         */
-        /*
-        ui.wave.on('change', function(event) {
-          var wave = waves[$(event.target).data('output')()];
-          filter.input = wave.output;
-          wave.freq = ui.freq.data('output');
-        }).trigger('change');
-        */
       }
     },
     {
@@ -230,6 +111,27 @@ $(function() {
           }
         });
 
+        /*
+        // DTMF Signal
+        var lo = [ 697, 770, 852, 941 ];
+        var hi = [ 1209, 1336, 1477, 1633 ];
+        var chars = '147*2580369#ABCD';
+        //147*
+        //2580
+        //369#
+        //ABCD
+        var f1 = lo[i % 4];
+        var f2 = hi[~~(i / 4)];
+
+         */
+        /*
+        ui.wave.on('change', function(event) {
+          var wave = waves[$(event.target).data('output')()];
+          filter.input = wave.output;
+          wave.freq = ui.freq.data('output');
+        }).trigger('change');
+        */
+
 /*
         var eg_delta = eg.delta;
         var cnt = 0;
@@ -252,6 +154,167 @@ $(function() {
     }
   ];
 
+  var js1Synth =     {
+    label : 'JS1',
+    ui : [
+      { id : 'pad1', type : 'pad', label : 'Pad' },
+      { id : 'seq1', type : 'seq', label : 'Seq' },
+      { id : 'osc1', type : 'osc', label : 'OSC1' },
+      { id : 'osc2', type : 'osc', label : 'OSC2' },
+      { id : 'eg', type : 'eg', label : 'EG' },
+      { id : 'lfo', type : 'osc', label : 'LFO',
+        minFreq : 1/30, maxFreq : 100 },
+      { id : 'filter', type : 'select', label : 'Filter',
+          options : [ 'lpf', 'hpf', 'bpf', 'notch' ] },
+      { id : 'cutoff', type : 'log', label : 'Cutoff',
+          min : 20, max : 20000 },
+      { id : 'resonance', type : 'log',
+          label : 'Resonance', min : 1, max : 16 }
+    ],
+    init : function(ui) {
+
+      var mysynth = function() {
+        var osc1 = synth.osc();
+        var osc2 = synth.osc();
+        var eg = synth.eg();
+        var mixer = synth.mixer();
+        mixer.inputs.push(osc1.output);
+        mixer.inputs.push(osc2.output);
+        mixer.gain = eg.output;
+        var lfo = synth.osc();
+        var filter = synth.filter();
+        filter.input = mixer.output;
+        return {
+          osc1 : osc1,
+          osc2 : osc2,
+          eg : eg,
+          lfo : lfo,
+          filter : filter
+        };
+      }();
+
+      mixer.inputs.push(mysynth.filter.output);
+
+      mysynth.osc1.type = ui.osc1.data('type');
+      mysynth.osc1.freq = ui.osc1.data('freq');
+      mysynth.osc1.gain = ui.osc1.data('gain');
+
+      mysynth.osc2.type = ui.osc2.data('type');
+      mysynth.osc2.freq = ui.osc2.data('freq');
+      mysynth.osc2.gain = ui.osc2.data('gain');
+
+      mysynth.eg.attack = ui.eg.data('attack');
+      mysynth.eg.decay = ui.eg.data('decay');
+      mysynth.eg.sustain = ui.eg.data('sustain');
+      mysynth.eg.release = ui.eg.data('release');
+
+      mysynth.lfo.type = ui.lfo.data('type');
+      mysynth.lfo.freq = ui.lfo.data('freq');
+      mysynth.lfo.gain = ui.lfo.data('gain');
+
+      mysynth.filter.type = ui.filter.data('output');
+      mysynth.filter.cutoff = ui.cutoff.data('output');
+      mysynth.filter.resonance = ui.resonance.data('output');
+
+      var mod = function(freq) {
+        return function() {
+          if (arguments.length == 1) {
+            freq(arguments[0]);
+          }
+          return freq() * Math.exp(mysynth.lfo.output() );
+        };
+      };
+      mysynth.osc1.freq = mod(mysynth.osc1.freq);
+      mysynth.osc2.freq = mod(mysynth.osc2.freq);
+      mysynth.filter.cutoff = mod(mysynth.filter.cutoff);
+
+      ui.pad1.on('change', function(event) {
+        if (ui.pad1.data('output')() ) {
+          mysynth.lfo.sync();
+          mysynth.eg.on();
+        } else {
+          mysynth.eg.off();
+        }
+      });
+
+      var drumKit = this.drumKit;
+      ui.seq1.on('change', function(event) {
+        var note = ui.seq1.data('state')().current;
+        if (note != 0) {
+          if (!drumKit) {
+            var freq = getFreqByNote(note);
+            mysynth.osc1.freq(freq);
+            mysynth.osc2.freq(freq);
+          }
+          mysynth.lfo.sync();
+          mysynth.eg.on();
+        } else {
+          mysynth.eg.off();
+        }
+      });
+      seqList.push(function(step) {
+        var pat = ui.seq1.data('state')().pattern;
+        var note = pat[step % pat.length];
+        if (note != 0) {
+          if (!drumKit) {
+            var freq = getFreqByNote(note);
+            mysynth.osc1.freq(freq);
+            mysynth.osc2.freq(freq);
+          }
+          mysynth.lfo.sync();
+          mysynth.eg.on();
+        }
+      });
+    }
+  };
+
+  var patchAndSeqList = [
+{
+  "pad1":{"output":0},
+  "seq1":{"pattern":[4,2,5,3,8,6,6,4,3,4,3,2,3,5,6,4],"current":0},
+  "osc1":{"type":"saw","freq":554.3652619537444,"gain":0.09011650925854546},
+  "osc2":{"type":"noise","freq":554.3652619537444,"gain":0},
+  "eg":{"attack":1,"decay":0.10459856467414358,"sustain":0,"release":1},
+  "lfo":{"type":"saw","freq":2.9682986280386467,"gain":0},
+  "filter":{"output":"lpf"},
+  "cutoff":{"output":3205.2562844188515},
+  "resonance":{"output":7.526382511320843}
+},
+{
+  "pad1":{"output":0},
+  "seq1":{"pattern":[1,0,0,0,1,0,0,0,1,0,0,0,1,0,0,0],"current":0},
+  "osc1":{"type":"sin","freq":99.02811974644634,"gain":1},
+  "osc2":{"type":"noise","freq":493.88330125612407,"gain":0},
+  "eg":{"attack":1,"decay":0.17069760313420154,"sustain":0,"release":1},
+  "lfo":{"type":"saw","freq":2.9682986280386467,"gain":0},
+  "filter":{"output":"lpf"},
+  "cutoff":{"output":295.4821936759269},
+  "resonance":{"output":5.607995067153215}
+},
+{
+  "pad1":{"output":0},
+  "seq1":{"pattern":[0,0,3,0,0,0,3,0,0,0,3,0,0,0,3,0],"current":0},
+  "osc1":{"type":"saw","freq":493.88330125612407,"gain":0},
+  "osc2":{"type":"noise","freq":493.88330125612407,"gain":0.21229158249767896},
+  "eg":{"attack":1,"decay":0.03878893213907722,"sustain":0,"release":1},
+  "lfo":{"type":"saw","freq":2.9682986280386467,"gain":0},
+  "filter":{"output":"lpf"},
+  "cutoff":{"output":3296.886068998814},
+  "resonance":{"output":7.526382511320843}
+},
+{
+  "pad1":{"output":0},
+  "seq1":{"pattern":[0,0,0,0,3,0,0,0,0,0,0,0,3,0,0,3],"current":0},
+  "osc1":{"type":"sin","freq":425.14773870913365,"gain":0.183516822238161},
+  "osc2":{"type":"noise","freq":493.88330125612407,"gain":0.4047767053756782},
+  "eg":{"attack":1,"decay":0.0443534367132146,"sustain":0,"release":1},
+  "lfo":{"type":"saw","freq":2.9682986280386467,"gain":0},
+  "filter":{"output":"lpf"},
+  "cutoff":{"output":2271.1684005370444},
+  "resonance":{"output":7.526382511320843}
+}
+  ];
+  
   //-------------------------------------------------------
 
   synthkit.debug = true;
@@ -270,7 +333,26 @@ $(function() {
   var synth = synthkit.createSynth();
   var mixer = synth.mixer();
   synthkit.createSynthNode(audioCtx, synth, mixer.output).connect(gainNode);
-  $.each(sampleDefs, function(i, uiDef) {
-    $('BODY').append(synthkit.createUI(uiDef) );
+
+
+  $.each(synthDefs, function(i, synthDef) {
+    $('BODY').append(synthkit.createUI(synthDef) );
   });
+
+  var seqList = [];
+  $.each(patchAndSeqList, function(i, patchAndSeq) {
+    $('BODY').append(synthkit.createUI(
+        $.extend(js1Synth, {settings : patchAndSeq, drumKit : i > 0}) ) );
+  });
+
+  !function() {
+    var step = 0;
+    var clock = synth.clock(16, 120);
+    clock.ontrigger = function() {
+      for (var i = 0; i < seqList.length; i += 1) {
+        seqList[i](step);
+      }
+      step = (step + 1) % clock.beat();
+    };
+  }();
 });
