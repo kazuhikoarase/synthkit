@@ -441,6 +441,9 @@ var synthkit = function() {
     };
     var register = function(module) {
       modules.push(module);
+      if (synth.debug) {
+        console.log('register:' + modules.length);
+      }
     };
     var unregister = function(module) {
       var newModules = [];
@@ -450,6 +453,9 @@ var synthkit = function() {
         }
       }
       modules = newModules;
+      if (synth.debug) {
+        console.log('unregister:' + modules.length);
+      }
     };
     var delta = function() {
       for (var i = 0; i < modules.length; i += 1) {
@@ -458,6 +464,7 @@ var synthkit = function() {
     };
 
     var synth = {
+      debug : false,
       Fs : Fs,
       _const : _const,
       delta : delta,

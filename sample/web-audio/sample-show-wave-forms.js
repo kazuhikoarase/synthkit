@@ -75,7 +75,7 @@ $(function() {
     };
   };
   var f = exp(10);
-console.log(f(0.5));
+  console.log(f(0.5));
   ctx.beginPath();
   ctx.strokeStyle = '#ffffff';
   for (var _x = 0; _x <= 1; _x += 0.01) {

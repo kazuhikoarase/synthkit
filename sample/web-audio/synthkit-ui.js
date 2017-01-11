@@ -1,5 +1,5 @@
 //
-// synthkit sample and test for Web Audio
+// synthkit-ui
 //
 // Copyright (c) 2016 Kazuhiko Arase
 //
@@ -9,7 +9,9 @@
 //  http://www.opensource.org/licenses/mit-license.php
 //
 
-var synthkit_sample = function() {
+!function(synthkit) {
+
+  'use strict';
 
   var createSVGElement = function(tagName) {
     return $(document.createElementNS(
@@ -120,7 +122,7 @@ var synthkit_sample = function() {
     var $comp = createBase(50, spec);
 
     var gap = 4;
-    var model = { val : -1, valid : false };
+    var model = { val : -1, valid : false, output : 0 };
     var r = ~~(size / 2 - gap);
 
     var $knob = createSVGElement('g').
@@ -158,32 +160,41 @@ var synthkit_sample = function() {
         $comp.trigger('change');
       }
     });
+
+    var converter = { valToOutput : null, outputToVal : null };
     if (spec.type == 'liner') {
-      var outputCache = 0;
-      $comp.data('output', prop(function() {
-        if (!model.valid) {
-          outputCache = spec.min + (spec.max - spec.min) * val();
-          model.valid = true;
-        }
-        return outputCache;
-      }, function(output) {
-        val( (output - spec.min) / (spec.max - spec.min) );
-      }) );
+      converter.valToOutput = function(val) {
+        return spec.min + (spec.max - spec.min) * val;
+      };
+      converter.outputToVal = function(output) {
+        return (output - spec.min) / (spec.max - spec.min);
+      };
     } else if (spec.type == 'log') {
-      var outputCache = 0;
       var lmin = Math.log(spec.min);
       var lmax = Math.log(spec.max);
-      var offset = spec.offset || 0;
-      $comp.data('output', prop(function() {
-        if (!model.valid) {
-          outputCache = Math.exp(lmin + (lmax - lmin) * val() ) + offset;
-          model.valid = true;
-        }
-        return outputCache;
-      }, function(output) {
-        val( (Math.log(output - offset) - lmin) / (lmax - lmin) );
-      }) );
+      converter.valToOutput = function(val) {
+        return Math.exp(lmin + (lmax - lmin) * val);
+      };
+      converter.outputToVal = function(output) {
+        return (Math.log(output) - lmin) / (lmax - lmin);
+      };
+    } else if (spec.type == 'custom') {
+      converter.valToOutput = spec.valToOutput;
+      converter.outputToVal = spec.outputToVal;
+    } else {
+      throw 'type:' + spec.type;
     }
+
+    $comp.data('output', prop(function() {
+      if (!model.valid) {
+        model.output = converter.valToOutput(val() );
+        model.valid = true;
+      }
+      return model.output;
+    }, function(output) {
+      val(converter.outputToVal(output) );
+    }) );
+
     $comp.data('state', prop(function() {
       return { output : $comp.data('output')() };
     }, function(state) {
@@ -300,36 +311,49 @@ var synthkit_sample = function() {
     return $comp;
   };
 
+  var createConverter = function(n) {
+    return {
+      valToOutput : function(val) {
+        return (Math.exp(val * n) - 1) / (Math.exp(n) - 1);
+      },
+      outputToVal : function(output) {
+        return Math.log(output * (Math.exp(n) - 1) + 1) / n;
+      }
+    };
+  };
+
   var createOSC = function(spec) {
-    var offset = -0.25;
-    var min = -offset;
-    var max = 1 - offset;
+    var conv = createConverter(2);
     return createCombined(spec, [
       { id : 'type', type : 'select', label : 'Wave',
         options : [ 'sin', 'square', 'saw', 'triangle', 'noise'] },
       { id : 'freq', type : 'log', label : 'Freq',
         min : spec.minFreq || 20, max : spec.maxFreq || 20000 },
-      { id : 'gain', type : 'log', label : 'Gain',
-        min : min, max : max, offset : offset }
+      { id : 'gain', type : 'custom', label : 'Gain',
+        valToOutput : conv.valToOutput, outputToVal : conv.outputToVal }
     ]);
   };
 
   var createEG = function(spec) {
-    var offset = -0.25;
-    var min = -offset;
-    var max = 1 - offset;
-    var offset_r = -0.0001;
-    var min_r = 1 - offset_r;
-    var max_r = -offset_r;
+    var conv0 = createConverter(10);
+    var conv1 = {
+      valToOutput : function(val) {
+        return conv0.valToOutput(1 - val);
+      },
+      outputToVal : function(output) {
+        return 1 - conv0.outputToVal(output);
+      }
+    };
+    var conv2 = createConverter(2);
     return createCombined(spec, [
-      { id : 'attack', type : 'log', label : 'Attack',
-        min : min_r, max : max_r, offset : offset_r },
-      { id : 'decay', type : 'log', label : 'Decay',
-        min : min_r, max : max_r, offset : offset_r },
-      { id : 'sustain', type : 'log', label : 'Sustain',
-        min : min, max : max, offset : offset },
-      { id : 'release', type : 'log', label : 'Release',
-          min : min_r, max : max_r, offset : offset_r }
+      { id : 'attack', type : 'custom', label : 'Attack',
+        valToOutput : conv1.valToOutput, outputToVal : conv1.outputToVal},
+      { id : 'decay', type : 'custom', label : 'Decay',
+        valToOutput : conv1.valToOutput, outputToVal : conv1.outputToVal },
+      { id : 'sustain', type : 'custom', label : 'Sustain',
+        valToOutput : conv2.valToOutput, outputToVal : conv2.outputToVal },
+      { id : 'release', type : 'custom', label : 'Release',
+        valToOutput : conv1.valToOutput, outputToVal : conv1.outputToVal }
     ]);
   };
 
@@ -339,6 +363,7 @@ var synthkit_sample = function() {
       return createPad(spec);
     case 'liner' :
     case 'log' :
+    case 'custom' :
       return createKnob(spec);
     case 'select' :
       return createSelect(spec);
@@ -353,20 +378,20 @@ var synthkit_sample = function() {
 
   //-------------------------------------------------------
 
-  var createSample = function(sampleDef) {
+  synthkit.createUI = function(uiDef) {
 
     var ui = {};
 
     var $ui = $('<div></div>').css('margin-bottom', '8px');
 
-    $ui.append($('<div></div>').text(sampleDef.label) ).
+    $ui.append($('<div></div>').text(uiDef.label) ).
       append($('<input type="button" />').
         css('margin', '4px 0px 4px 0px').
         val('copy settings').
         on('click', function(event) {
           var settings = '';
           settings += '{';
-          $.each(sampleDef.ui || [], function(i, spec) {
+          $.each(uiDef.ui || [], function(i, spec) {
             if (i > 0) {
               settings += ',';
             }
@@ -382,26 +407,24 @@ var synthkit_sample = function() {
           $tmp.remove();
         }) ).append($('<br/>') );
 
-    $.each(sampleDef.ui || [], function(i, spec) {
+    $.each(uiDef.ui || [], function(i, spec) {
       ui[spec.id] = createComponent(spec);
-      var state = (sampleDef.settings || {})[spec.id];
+      var state = (uiDef.settings || {})[spec.id];
       if (typeof state != 'undefined') {
         ui[spec.id].data('state')(state);
       }
       $ui.append(ui[spec.id]);
     });
 
-    sampleDef.init(ui);
+    uiDef.init(ui);
     $ui.on('change', function(event) {
       var $target = $(event.target);
-      console.log('change - ' +
-          $target.attr('id') + ' => ' +
-          JSON.stringify($target.data('state')() ) );
+      if (synthkit.debug) {
+        console.log('change - ' +
+            $target.attr('id') + ' => ' +
+            JSON.stringify($target.data('state')() ) );
+      }
     });
     return $ui;
   };
-
-  return {
-    createSample : createSample
-  };
-}();
+}(synthkit);

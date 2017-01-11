@@ -62,13 +62,13 @@ $(function() {
       ],
       settings : {
         "pad1":{"output":0},
-        "osc1":{"type":"square","freq":490,"gain":0.3},
-        "osc2":{"type":"triangle","freq":336,"gain":0.3},
-        "eg":{"attack":1,"decay":1,"sustain":0,"release":1},
-        "lfo":{"type":"sin","freq":8,"gain":0.6},
+        "osc1":{"type":"square","freq":439.99999999999983,"gain":0.2785431093456766},
+        "osc2":{"type":"noise","freq":513.683392440327,"gain":0},
+        "eg":{"attack":1,"decay":0.10459856467414358,"sustain":0,"release":1},
+        "lfo":{"type":"saw","freq":2.9682986280386467,"gain":0},
         "filter":{"output":"lpf"},
-        "cutoff":{"output":695},
-        "resonance":{"output":10}
+        "cutoff":{"output":1557.1719937932373},
+        "resonance":{"output":7.526382511320843}
       },
       init : function(ui) {
 
@@ -94,14 +94,17 @@ $(function() {
 
         mixer.inputs.push(mysynth.filter.output);
 
-        var clock = function() {
+        !function() {
           var count = 0;
-          var clock = synth.clock(4, 120);
+          var clock = synth.clock(16, 120);
           clock.ontrigger = function() {
-//            mysynth.eg.on();
+            if (count % 4 == 0) {
+              mysynth.lfo.sync();
+              ui.osc1.data('freq')(count == 0? 880 :  440);
+              mysynth.eg.on();
+            }
             count = (count + 1) % clock.beat();
           };
-          return clock;
         }();
 
         var mod = function(freq) {
@@ -251,6 +254,8 @@ $(function() {
 
   //-------------------------------------------------------
 
+  synthkit.debug = true;
+  
   var AudioContext = window.AudioContext || window.webkitAudioContext;
   if (!AudioContext) {
     console.log('AudioContext not supported');
@@ -265,7 +270,7 @@ $(function() {
   var synth = synthkit.createSynth();
   var mixer = synth.mixer();
   synthkit.createSynthNode(audioCtx, synth, mixer.output).connect(gainNode);
-  $.each(sampleDefs, function(i, sampleDef) {
-    $('BODY').append(synthkit_sample.createSample(sampleDef) );
+  $.each(sampleDefs, function(i, uiDef) {
+    $('BODY').append(synthkit.createUI(uiDef) );
   });
 });
