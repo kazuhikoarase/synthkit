@@ -514,3 +514,9 @@ var synthkit = function() {
     createSynthNode : createSynthNode
   };
 }();
+
+!function(synthkit) {
+  if (typeof exports === 'object') {
+    module.exports = synthkit;
+  }
+}(synthkit);
