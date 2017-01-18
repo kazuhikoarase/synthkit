@@ -7,7 +7,7 @@ $(function() {
   'use strict';
 
   var synth = synthkit.createSynth();
-  var prop = synth.prop;
+  var prop = synthkit.prop;
   var Fs = synth.Fs;
 
   var waves = [

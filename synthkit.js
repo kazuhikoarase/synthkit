@@ -13,6 +13,17 @@ var synthkit = function() {
 
   'use strict';
 
+  var prop = function(val) {
+    return function() {
+      if (arguments.length == 1) {
+        val = arguments[0];
+      }
+      return val;
+    };
+  };
+
+  var _2PI = 2 * Math.PI;
+
   var WaveFormType = {
       SIN : 'sin',
       SQUARE : 'square',
@@ -31,17 +42,6 @@ var synthkit = function() {
   var createSynth = function(Fs) {
 
     Fs = Fs || 44100;
-
-    var _2PI = 2 * Math.PI;
-
-    var prop = function(val) {
-      return function() {
-        if (arguments.length == 1) {
-          val = arguments[0];
-        }
-        return val;
-      };
-    };
 
     var mixer = function(gain) {
 
@@ -88,8 +88,9 @@ var synthkit = function() {
 
       var module = createModule({
         freq : prop(freq || 440),
+        ratio : prop(0.5),
         sync : function() { t = 0; },
-        output : function() { return t < 1? a : -a; },
+        output : function() { return t < 2 * module.ratio()? a : -a; },
         delta : function() { t = (t + _2_Fs * module.freq() ) % 2; }
       });
 
@@ -167,6 +168,7 @@ var synthkit = function() {
       var module = createModule({
         type : prop(type || WaveFormType.SIN),
         freq : prop(freq || 440),
+        ratio : prop(0.5),
         gain : prop(gain || 1),
         sync : function() {
           if (wave != null) {
@@ -187,6 +189,9 @@ var synthkit = function() {
           }
           if (wave.freq != module.freq) {
             wave.freq = module.freq;
+          }
+          if (wave.ratio != module.ratio) {
+            wave.ratio = module.ratio;
           }
           return wave.output() * gain;
         }
@@ -474,7 +479,6 @@ var synthkit = function() {
     var synth = {
       debug : false,
       Fs : Fs,
-      prop : prop,
       delta : delta,
       mixer : mixer,
       sin : sin,
@@ -508,6 +512,7 @@ var synthkit = function() {
   };
 
   return {
+    prop : prop,
     WaveFormType : WaveFormType,
     FilterType : BiquadFilterType,
     createSynth : createSynth,

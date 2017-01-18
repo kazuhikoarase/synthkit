@@ -154,7 +154,7 @@ $(function() {
     }
   ];
 
-  var js1Synth =     {
+  var js1Synth = {
     label : 'JS1',
     ui : [
       { id : 'pad1', type : 'pad', label : 'Pad' },
@@ -178,11 +178,11 @@ $(function() {
         var osc2 = synth.osc();
         var eg = synth.eg();
         var mixer = synth.mixer();
+        var lfo = synth.osc();
+        var filter = synth.filter();
         mixer.inputs.push(osc1.output);
         mixer.inputs.push(osc2.output);
         mixer.gain = eg.output;
-        var lfo = synth.osc();
-        var filter = synth.filter();
         filter.input = mixer.output;
         return {
           osc1 : osc1,
@@ -197,10 +197,12 @@ $(function() {
 
       mysynth.osc1.type = ui.osc1.data('type');
       mysynth.osc1.freq = ui.osc1.data('freq');
+      mysynth.osc1.ratio = ui.osc1.data('ratio');
       mysynth.osc1.gain = ui.osc1.data('gain');
 
       mysynth.osc2.type = ui.osc2.data('type');
       mysynth.osc2.freq = ui.osc2.data('freq');
+      mysynth.osc2.ratio = ui.osc1.data('ratio');
       mysynth.osc2.gain = ui.osc2.data('gain');
 
       mysynth.eg.attack = ui.eg.data('attack');
@@ -268,16 +270,28 @@ $(function() {
     }
   };
 
+  var pong = {
+      "pad1":{"output":0},
+      "seq1":{"pattern":[1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0],"current":0},
+      "osc1":{"type":"sin","freq":632.4555320336755,"ratio":0,"gain":0.4067326906894885},
+      "osc2":{"type":"sin","freq":1013.5910343332033,"ratio":0,"gain":0.480370057825076},
+      "eg":{"attack":1,"decay":0.014206203234342393,"sustain":0,"release":0.02053107012922723},
+      "lfo":{"type":"saw","freq":22.572764827917645,"ratio":0,"gain":0},
+      "filter":{"output":"lpf"},
+      "cutoff":{"output":19999.999999999985},
+      "resonance":{"output":1}
+    };
+  
   var patchAndSeqList = [
 {
   "pad1":{"output":0},
   "seq1":{"pattern":[4,2,5,3,8,6,6,4,3,4,3,2,3,5,6,4],"current":0},
-  "osc1":{"type":"saw","freq":554.3652619537444,"gain":0.09011650925854546},
-  "osc2":{"type":"noise","freq":554.3652619537444,"gain":0},
+  "osc1":{"type":"square","freq":587.3295358348154,"gain":0.06192032421695342},
+  "osc2":{"type":"noise","freq":587.3295358348154,"gain":0},
   "eg":{"attack":1,"decay":0.10459856467414358,"sustain":0,"release":1},
   "lfo":{"type":"saw","freq":2.9682986280386467,"gain":0},
   "filter":{"output":"lpf"},
-  "cutoff":{"output":3205.2562844188515},
+  "cutoff":{"output":5898.446590288671},
   "resonance":{"output":7.526382511320843}
 },
 {
@@ -295,23 +309,23 @@ $(function() {
   "pad1":{"output":0},
   "seq1":{"pattern":[0,0,3,0,0,0,3,0,0,0,3,0,0,0,3,0],"current":0},
   "osc1":{"type":"saw","freq":493.88330125612407,"gain":0},
-  "osc2":{"type":"noise","freq":493.88330125612407,"gain":0.21229158249767896},
-  "eg":{"attack":1,"decay":0.03878893213907722,"sustain":0,"release":1},
+  "osc2":{"type":"noise","freq":493.88330125612407,"gain":0.12383776900028452},
+  "eg":{"attack":1,"decay":0.02222358324492065,"sustain":0,"release":1},
   "lfo":{"type":"saw","freq":2.9682986280386467,"gain":0},
-  "filter":{"output":"lpf"},
-  "cutoff":{"output":3296.886068998814},
+  "filter":{"output":"hpf"},
+  "cutoff":{"output":4895.873862410455},
   "resonance":{"output":7.526382511320843}
 },
 {
   "pad1":{"output":0},
   "seq1":{"pattern":[0,0,0,0,3,0,0,0,0,0,0,0,3,0,0,3],"current":0},
-  "osc1":{"type":"sin","freq":425.14773870913365,"gain":0.183516822238161},
+  "osc1":{"type":"sin","freq":328.19346638560006,"gain":0.13435078314012427},
   "osc2":{"type":"noise","freq":493.88330125612407,"gain":0.4047767053756782},
-  "eg":{"attack":1,"decay":0.0443534367132146,"sustain":0,"release":1},
+  "eg":{"attack":1,"decay":0.03327058383917974,"sustain":0,"release":1},
   "lfo":{"type":"saw","freq":2.9682986280386467,"gain":0},
   "filter":{"output":"lpf"},
-  "cutoff":{"output":2271.1684005370444},
-  "resonance":{"output":7.526382511320843}
+  "cutoff":{"output":1582.0716184971661},
+  "resonance":{"output":3.1189716508399106}
 }
   ];
   
@@ -334,16 +348,22 @@ $(function() {
   var mixer = synth.mixer();
   synthkit.createSynthNode(audioCtx, synth, mixer.output).connect(gainNode);
 
-
   $.each(synthDefs, function(i, synthDef) {
     $('BODY').append(synthkit.createUI(synthDef) );
   });
 
   var seqList = [];
+
+  $('BODY').append(synthkit.createUI(
+      $.extend(js1Synth, { settings : pong }) ) );
+
   $.each(patchAndSeqList, function(i, patchAndSeq) {
     $('BODY').append(synthkit.createUI(
         $.extend(js1Synth, {settings : patchAndSeq, drumKit : i > 0}) ) );
   });
+
+  // test
+  seqList = [];
 
   !function() {
     var step = 0;

@@ -63,10 +63,10 @@
     var $comp = createSVG(w, h).attr('id', spec.id).
       css('vertical-align', 'top').
       append(createSVGElement('rect').
-        css('stroke', 'none').css('fill', '#cccccc').
+        css('stroke', 'none').css('fill', '#333333').
         attr({ x : 0, y : 0, width : w, height : h, rx : 4, ry : 4 }) ).
       append(createSVGElement('text').
-        css('stroke', 'none').css('fill', '#000000').
+        css('stroke', 'none').css('fill', '#ffffff').
         css('font-size', fontSize + 'px').
         css('text-anchor', 'middle').
         css('alignment-baseline', 'text-before-edge').
@@ -86,7 +86,7 @@
     var gap = 4;
     var model = { on : false };
     var $pad = createSVGElement('rect').css('fill', '#000000').
-      css('stroke', 'none').attr({x : gap, y : gap,
+      css('stroke', '#666666').attr({x : gap, y : gap,
         width : size - gap * 2, height : size - gap * 2, rx : 6, ry: 6}).
       on('mousedown', function(event) {
         event.preventDefault();
@@ -127,7 +127,7 @@
 
     var $knob = createSVGElement('g').
       append(createSVGElement('circle').css('fill', '#000000').
-        css('stroke', 'none').attr({ cx : 0, cy : 0, r : r }) ).
+        css('stroke', '#666666').attr({ cx : 0, cy : 0, r : r }) ).
       append(createSVGElement('path').css('fill', 'none').
         css('stroke-width', '4').css('stroke', '#ffffff').
         attr('d', 'M0 0L' + 0 + ' ' + r) ).
@@ -393,6 +393,7 @@
         options : [ 'sin', 'square', 'saw', 'triangle', 'noise'] },
       { id : 'freq', type : 'log', label : 'Freq',
         min : spec.minFreq || 20, max : spec.maxFreq || 20000 },
+      { id : 'ratio', type : 'liner', label : 'Ratio', min : 0, max : 1 },
       { id : 'gain', type : 'custom', label : 'Gain',
         valToOutput : conv.valToOutput, outputToVal : conv.outputToVal }
     ]);
