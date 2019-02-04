@@ -9,7 +9,7 @@
 //  http://www.opensource.org/licenses/mit-license.php
 //
 
-$(function() {
+var init = function() {
 
   'use strict';
 
@@ -375,4 +375,11 @@ $(function() {
       step = (step + 1) % clock.beat();
     };
   }();
+
+  $('BODY').off('click', init);
+};
+
+$(function() {
+  $('BODY').on('click', init);
 });
+
