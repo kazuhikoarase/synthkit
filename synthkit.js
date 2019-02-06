@@ -28,6 +28,7 @@ var synthkit = function() {
       SIN : 'sin',
       SQUARE : 'square',
       SAW : 'saw',
+      REVSAW : 'revsaw',
       TRIANGLE : 'triangle',
       NOISE : 'noise'
   };
@@ -97,7 +98,7 @@ var synthkit = function() {
       return module;
     };
 
-    var saw = function(freq) {
+    var saw = function(freq, rev) {
 
       var t = 1;
       var a = 1;
@@ -106,7 +107,9 @@ var synthkit = function() {
       var module = createModule({
         freq : prop(freq || 440),
         sync : function() { t = 1; },
-        output : function() { return t * a - a; },
+        output : rev?
+            function() { return a - t * a; } :
+            function() { return t * a - a; },
         delta : function() { t = (t + _2_Fs * module.freq() ) % 2; }
       });
 
@@ -159,6 +162,7 @@ var synthkit = function() {
         sin : sin,
         square : square,
         saw : saw,
+        revsaw : function(freq) { return saw(freq, true); },
         triangle : triangle,
         noise : noise
       };
