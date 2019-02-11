@@ -9,9 +9,11 @@
 //  http://www.opensource.org/licenses/mit-license.php
 //
 
-var synthkit = function(opts) {
+var synthkit = function() {
 
   'use strict'
+
+  var Fs = 44100;
 
   var extend = function(o) {
     for (var i = 1; i < arguments.length; i += 1) {
@@ -27,10 +29,6 @@ var synthkit = function(opts) {
     }
     return o;
   };
-
-  opts = extend({ sampleRate : 44100 }, opts);
-
-  var Fs = opts.sampleRate;
 
   var defaultInput = function() {
     var module;
