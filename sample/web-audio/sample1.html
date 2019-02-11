@@ -11,18 +11,24 @@
 
 <script>
 
-'use strict'
+'use strict';
+
+var init = function() {
+  return synthkit.sine({ freq: 440 });
+};
 
 var player = null;
+var src = null;
 
 var startButton = document.getElementById('start');
 
 startButton.addEventListener('mousedown', function() {
   if (player == null) {
     player = synthkit.player();
+    src = init();
   }
   if (!player.playing) {
-    player.start(synthkit.saw({ freq: 440 }) );
+    player.start(src);
     startButton.textContent = 'stop';
   } else {
     player.stop();
