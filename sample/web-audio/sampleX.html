@@ -1,7 +1,21 @@
+<!doctype html>
+<html>
+<head>
+<meta charset="UTF-8" />
+</head>
+<body>
+
+<button id="start">start</button>
+
+<div id="disp"></div>
+
+<script src="../../synthkit.js"></script>
+
+<script>
 
 'use strict'
 
-!function() {
+var init = function() {
 
   var showWave = function(wave) {
 
@@ -42,27 +56,7 @@
   showWave(synthkit.triangle() );
   showWave(synthkit.noise() );
 
-}();
-
-var start = function() {
-
   //-------------------------------------------------------
-
-  document.getElementById('test1').addEventListener('mousedown', function() {
-    egHH.on();
-    var mouseupHandler = function() {
-      egHH.off();
-      document.removeEventListener('mouseup', mouseupHandler);
-    }
-    document.addEventListener('mouseup', mouseupHandler);
-  });
-
-  document.getElementById('test1').addEventListener('click', function() {
-//    w1.freq = function() { return 440; };
-  });
-  document.getElementById('test2').addEventListener('click', function() {
-//    w1.freq = function() { return 448; };
-  });
 
   var notes = [];
   !function() {
@@ -157,17 +151,6 @@ var start = function() {
     }
   };
 
-  synthkit.player(synthkit.mixer({
-    inputs : [
-      synthkit.vol({ input: egHH, gain: -2, pan: -1 }),
-      synthkit.vol({ input: egBD, gain: 0 }),
-      synthkit.vol({ input: egSD, gain: -0.5 }),
-      synthkit.vol({ input: egBa, gain: -1, pan: 1 }),
-      seq1
-    ],
-    mono : false
-  }) );
-
   var enterFrame = function(time) {
     var s = '';
     for (var i = 0; i < beat; i += 1) {
@@ -177,13 +160,39 @@ var start = function() {
     window.requestAnimationFrame(enterFrame);
   };
   window.requestAnimationFrame(enterFrame);
+
+  return synthkit.mixer({
+    inputs : [
+      synthkit.vol({ input: egHH, gain: -2, pan: -1 }),
+      synthkit.vol({ input: egBD, gain: 0 }),
+      synthkit.vol({ input: egSD, gain: -0.5 }),
+      synthkit.vol({ input: egBa, gain: -1, pan: 1 }),
+      seq1
+    ],
+    mono : false
+  });
+
 };
 
-var clickHandler = function() {
-  start();
-  startButton.removeEventListener('click', clickHandler);
-  startButton.textContent = 'started.';
-};
+var player = null;
+var src = null;
 
 var startButton = document.getElementById('start');
-startButton.addEventListener('click', clickHandler);
+
+startButton.addEventListener('mousedown', function() {
+  if (player == null) {
+    player = synthkit.player();
+    src = init();
+  }
+  if (!player.playing) {
+    player.start(src);
+    startButton.textContent = 'stop';
+  } else {
+    player.stop();
+    startButton.textContent = 'start';
+  }
+});
+
+</script>
+</body>
+</html>

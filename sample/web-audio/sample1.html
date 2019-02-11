@@ -1,0 +1,35 @@
+<!doctype html>
+<html>
+<head>
+<meta charset="UTF-8" />
+</head>
+<body>
+
+<button id="start">start</button>
+
+<script src="../../synthkit.js"></script>
+
+<script>
+
+'use strict'
+
+var player = null;
+
+var startButton = document.getElementById('start');
+
+startButton.addEventListener('mousedown', function() {
+  if (player == null) {
+    player = synthkit.player();
+  }
+  if (!player.playing) {
+    player.start(synthkit.saw({ freq: 440 }) );
+    startButton.textContent = 'stop';
+  } else {
+    player.stop();
+    startButton.textContent = 'start';
+  }
+});
+
+</script>
+</body>
+</html>

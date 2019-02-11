@@ -9,11 +9,9 @@
 //  http://www.opensource.org/licenses/mit-license.php
 //
 
-var synthkit = function() {
+var synthkit = function(opts) {
 
   'use strict'
-
-  var Fs = 44110;
 
   var extend = function(o) {
     for (var i = 1; i < arguments.length; i += 1) {
@@ -29,6 +27,10 @@ var synthkit = function() {
     }
     return o;
   };
+
+  opts = extend({ sampleRate : 44100 }, opts);
+
+  var Fs = opts.sampleRate;
 
   var defaultInput = function() {
     var module;
@@ -175,7 +177,7 @@ var synthkit = function() {
   var sine = function(opts) {
 
     var _2PI = Math.PI * 2;
-    var _2PI_Fs = 2 * Math.PI / Fs;
+    var _2PI_Fs = _2PI/ Fs;
 
     var t = 0;
 
@@ -378,9 +380,11 @@ var synthkit = function() {
     }, opts || {});
   };
 
-  var player = function(src) {
+  var player = function() {
 
     var audioCtx = new AudioContext();
+
+    Fs = audioCtx.sampleRate;
 
     var gainNode = audioCtx.createGain();
     gainNode.gain.value = 0.2;
@@ -395,7 +399,7 @@ var synthkit = function() {
       outputDataL = outputBuffer.getChannelData(0);
       outputDataR = outputBuffer.getChannelData(1);
       for (i = 0; i < outputBuffer.length; i += 1) {
-        val = src();
+        val = player.src();
         if (typeof val == 'number') {
           outputDataL[i] = outputDataR[i] = val;
         } else {
@@ -404,13 +408,34 @@ var synthkit = function() {
         }
       }
     };
-    scriptNode.connect(gainNode);
 
-    return {
+    var player = {
+
       audioCtx: audioCtx,
       gainNode: gainNode,
       scriptNode: scriptNode,
+
+      src: function() { return 0; },
+
+      playing: false,
+      start: function(src) {
+        if (this.playing) {
+          return;
+        }
+        this.src = src;
+        scriptNode.connect(gainNode);
+        this.playing = true;
+      },
+      stop: function() {
+        if (!this.playing) {
+          return;
+        }
+        scriptNode.disconnect(gainNode);
+        this.playing = false;
+      },
     };
+
+    return player;
   };
 
   return {
@@ -426,7 +451,6 @@ var synthkit = function() {
     mixer: mixer,
     player: player
   };
-
 }();
 
 !function(synthkit) {
