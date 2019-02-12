@@ -69,7 +69,7 @@ var init = function() {
   });
 
   var notesBa = [ 10, 6, 8, 13 ];
-  var noteBa = 4;
+  var noteBa = 0;
 
   var egBa = synthkit.eg({
     input: synthkit.filter({
@@ -81,8 +81,25 @@ var init = function() {
       }),
       cutoff: 21500
     }),
-    attack: 1e2,
+    attack: 1e3,
     decay: 1e1
+  });
+
+  var notesLd = [ 10, 6, 8, 13, 6, 8, 13, 10 ];
+  var noteLd = 0;
+
+  var egLd = synthkit.eg({
+    input: synthkit.filter({
+      input: synthkit.mixer({
+        inputs: [
+          synthkit.saw({ freq: function() { return 4*notes[noteLd] * 1.005; } }),
+          synthkit.saw({ freq: function() { return 4*notes[noteLd]; } })
+        ]
+      }),
+      cutoff: 21500
+    }),
+    attack: 1e1,
+    decay: 1e0
   });
 
   var disp = { ticks: 0 };
@@ -93,19 +110,26 @@ var init = function() {
   var padBD = '100-'.replace(/\s+/g, '');
   var padSD = '0000100- 0000100- 00001000 0-00100-'.replace(/\s+/g, '');
   var patBa = '01111101 01110101'.replace(/\s+/g, '');
+  var patLd = '10010010 01001001'.replace(/\s+/g, '');
 
   var seq1 = synthkit.seq({ tempo: 132, beat: beat });
   seq1.trigger = function(ticks) {
 
     disp.ticks = ticks;
     noteBa = notesBa[Math.floor(ticks / patBa.length) % notesBa.length];
+    noteLd = notesLd[Math.floor(ticks / patLd.length / 4) % notesLd.length];
     var nHH = patHH.charAt(ticks % patHH.length);
     var nBD = padBD.charAt(ticks % padBD.length);
     var nSD = padSD.charAt(ticks % padSD.length);
     var nBa = patBa.charAt(ticks % patBa.length);
+    var nLd = patLd.charAt(ticks % patLd.length);
 
-    if (nBa!= '0') {
+    if (nBa != '0') {
       egBa.on(nBa == '1'? 0 : -1);
+    }
+
+    if (nLd != '0') {
+      egLd.on(nLd == '1'? 0 : -1);
     }
 
     if (nHH != '0') {
@@ -143,6 +167,7 @@ var init = function() {
       synthkit.vol({ input: egBD, gain: 0 }),
       synthkit.vol({ input: egSD, gain: -0.5 }),
       synthkit.vol({ input: egBa, gain: -1, pan: 1 }),
+  //    synthkit.vol({ input: egLd, gain: -2, pan: -0.5 }),
       seq1
     ],
     mono : false
