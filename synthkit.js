@@ -41,7 +41,7 @@ var synthkit = function() {
 
   var sequencer = function(opts) {
 
-    var _T = Fs * 120 * 2;
+    var _T = 1 / (Fs * 120 * 2);
 
     var t = 0;
     var ticks = -1;
@@ -51,7 +51,7 @@ var synthkit = function() {
     return module = extend(function() {
       try {
         nextTicks = Math.floor(
-            module.tempo() * module.beat() * t / _T);
+            module.tempo() * module.beat() * t * _T);
         if (ticks != nextTicks) {
           ticks = nextTicks;
           module.trigger(ticks);
@@ -72,6 +72,7 @@ var synthkit = function() {
 
   var envelopeGenerator = function(opts) {
 
+    var _T = 1 / Fs;
     var minGain = Math.log(10) * -3; // -60dB
     var maxGain = 0;
 
@@ -85,14 +86,14 @@ var synthkit = function() {
       } finally {
         if (state == 'a') {
           // attack
-          gain += module.attack();
+          gain += module.attack() * _T;
           if (gain > maxGain) {
             gain = maxGain;
             state = 'd';
           }
         } else if (state == 'd') {
           // decay
-          gain -= module.decay();
+          gain -= module.decay() * _T;
           if (gain < module.sustain() ) {
             gain = module.sustain();
             state = 's';
@@ -102,7 +103,7 @@ var synthkit = function() {
           // nothing to do.
         } else if (state == 'r') {
           // release
-          gain -= module.release();
+          gain -= module.release() * _T;
           if (gain < minGain) {
             gain = minGain;
             state = '';
@@ -117,10 +118,10 @@ var synthkit = function() {
       sync: function() { gain = minGain; state = ''; module.input.sync(); },
       on: function(gain) { state = 'a'; maxGain = gain || 0; },
       off: function() { state = 'r'; },
-      attack: function() { return 1E-1; },
-      decay: function() { return 1E-4; },
+      attack: function() { return 1E3; },
+      decay: function() { return 1E1; },
       sustain: function() { return minGain; },
-      release: function() { return 1E-3; },
+      release: function() { return 1E1; },
       input: defaultInput()
     }, opts || {});
   }
