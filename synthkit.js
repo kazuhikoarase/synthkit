@@ -73,16 +73,17 @@ var synthkit = function() {
   var envelopeGenerator = function(opts) {
 
     var _T = 1 / Fs;
-    var minGain = Math.log(10) * -3; // -60dB
+    var minGain = Math.log(10) * -3; // ~= -6.9, -60dB
     var maxGain = 0;
 
     var gain = minGain;
     var state = '';
 
-    var module;
+    var module, val;
     return module = extend(function() {
       try {
-        return gain > minGain? module.input() * Math.exp(gain) : 0;
+        val = module.input();
+        return gain > minGain? val * Math.exp(gain) : 0;
       } finally {
         if (state == 'a') {
           // attack
@@ -119,7 +120,7 @@ var synthkit = function() {
       on: function(gain) { state = 'a'; maxGain = gain || 0; },
       off: function() { state = 'r'; },
       attack: function() { return 1E3; },
-      decay: function() { return 1E1; },
+      decay: function() { return 1E0; },
       sustain: function() { return minGain; },
       release: function() { return 1E1; },
       input: defaultInput()
