@@ -1,0 +1,51 @@
+<!doctype html>
+<html>
+<head>
+<meta charset="UTF-8" />
+</head>
+<body>
+
+<button id="start">start</button>
+
+<script src="../../synthkit.js"></script>
+
+<script>
+
+'use strict';
+
+var init = function() {
+  var freq = function() {
+    return freq.val;
+  };
+  var eg = synthkit.eg({ input: synthkit.square({ freq: freq }) });
+  var seq = synthkit.seq({ beat: 16, trigger: function(ticks) {
+    if (ticks % 4 == 0) {
+      freq.val = ticks % 16 == 0? 880 : 440;
+      eg.on();
+    }
+  } });
+  return synthkit.mixer({ inputs: [ eg, seq ] });
+};
+
+var player = null;
+var src = null;
+
+var startButton = document.getElementById('start');
+
+startButton.addEventListener('mousedown', function() {
+  if (player == null) {
+    player = synthkit.player();
+    src = init();
+  }
+  if (!player.playing) {
+    player.start(src);
+    startButton.textContent = 'stop';
+  } else {
+    player.stop();
+    startButton.textContent = 'start';
+  }
+});
+
+</script>
+</body>
+</html>

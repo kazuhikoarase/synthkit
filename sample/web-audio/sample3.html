@@ -1,0 +1,84 @@
+<!doctype html>
+<html>
+<head>
+<meta charset="UTF-8" />
+</head>
+<body>
+
+<button id="start">start</button>
+<div>Type Shift + Enter to reload params.</div>
+<textarea id="params" style="width:400px;height:200px;">
+{
+  "freq": 440,
+  "attack": 1E3,
+  "decay": 1E1,
+  "sustain": -1E1,
+  "release": 1E1,
+  "filterType": "bpf",
+  "cutoff": 2E3,
+  "resonance": 30
+}
+</textarea>
+<script src="../../synthkit.js"></script>
+
+<script>
+
+'use strict';
+
+var init = function() {
+  var paramsArea = document.getElementById('params');
+  paramsArea.addEventListener('keydown', function(event) {
+    if (event.shiftKey && event.key == 'Enter') {
+      event.preventDefault();
+      params = JSON.parse(paramsArea.value);
+      console.log('reloaded.');
+    }
+  });
+  var params = JSON.parse(paramsArea.value);
+  var param = function(name) {
+    return function() { return params[name] };
+  };
+  var eg = synthkit.eg({
+    input: synthkit.filter({
+      input: synthkit.square({ freq: param('freq') }),
+      type: param('filterType'),
+      cutoff: param('cutoff'),
+      resonance: param('resonance')
+    }),
+    attack: param('attack'),
+    decay: param('decay'),
+    sustain: param('sustain'),
+    release: param('release'),
+  });
+  var seq = synthkit.seq({ beat: 4, trigger: function(ticks) {
+    if (ticks % 4 == 0) {
+      eg.on();
+    } else if (ticks % 4 == 1) {
+      eg.off();
+    }
+  } });
+  return synthkit.mixer({ inputs: [ eg, seq ] });
+};
+
+var player = null;
+var src = null;
+
+var startButton = document.getElementById('start');
+
+startButton.addEventListener('mousedown', function() {
+  if (player == null) {
+    player = synthkit.player();
+    src = init();
+  }
+  if (!player.playing) {
+    player.start(src);
+    startButton.textContent = 'stop';
+  } else {
+    player.stop();
+    startButton.textContent = 'start';
+  }
+});
+
+</script>
+</body>
+</html>
