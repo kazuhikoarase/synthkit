@@ -12,12 +12,18 @@
 <div id="disp"></div>
 
 <div id="app">
+{{val}},{{log}}
+<br/>
+<syn-variable v-model="val"></syn-variable>
+<syn-variable v-model="log" type="log" :range="[1, 100]"></syn-variable>
 
-<wave-view :wave="synthkit.sine()"></wave-view>
-<wave-view :wave="synthkit.square()"></wave-view>
-<wave-view :wave="synthkit.saw()"></wave-view>
-<wave-view :wave="synthkit.triangle()"></wave-view>
-<wave-view :wave="synthkit.noise()"></wave-view>
+<!-- 
+<syn-wave-view :wave="synthkit.sine()"></syn-wave-view>
+<syn-wave-view :wave="synthkit.square()"></syn-wave-view>
+<syn-wave-view :wave="synthkit.saw()"></syn-wave-view>
+<syn-wave-view :wave="synthkit.triangle()"></syn-wave-view>
+<syn-wave-view :wave="synthkit.noise()"></syn-wave-view>
+ -->
 
 </div>
 
@@ -26,7 +32,9 @@
 var vm = new Vue({
   el: '#app',
   data: {
-    synthkit: synthkit
+    synthkit: synthkit,
+    val: 50,
+    log: 1
   }
 });
 
