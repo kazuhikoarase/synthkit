@@ -15,7 +15,7 @@
 {{val}},{{log}}
 <br/>
 <syn-variable v-model="val"></syn-variable>
-<syn-variable v-model="log" type="log" :range="[1, 100]"></syn-variable>
+<syn-variable v-model="log" type="log" :range="[20, 20000]"></syn-variable>
 
 <!-- 
 <syn-wave-view :wave="synthkit.sine()"></syn-wave-view>
@@ -34,7 +34,7 @@ var vm = new Vue({
   data: {
     synthkit: synthkit,
     val: 50,
-    log: 1
+    log: 440
   }
 });
 
@@ -168,13 +168,16 @@ var init = function() {
     window.requestAnimationFrame(enterFrame);
   };
   window.requestAnimationFrame(enterFrame);
-
+console.log(vm.log)
   return synthkit.mixer({
     inputs : [
+      /*
       synthkit.vol({ input: egHH, gain: -2, pan: -1 }),
       synthkit.vol({ input: egBD, gain: 0 }),
       synthkit.vol({ input: egSD, gain: -0.5 }),
       synthkit.vol({ input: egBa, gain: -1, pan: 1 }),
+      */
+      synthkit.sine({ freq: function() { return vm.log; } }),
   //    synthkit.vol({ input: egLd, gain: -2, pan: -0.5 }),
       seq1
     ],

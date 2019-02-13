@@ -32,7 +32,7 @@ Vue.component('SynVariable', {
           }
           var l = Math.log(v) / Math.log(10);
           var p = Math.floor(4 - l);
-          return Math.floor(Math.exp(
+          return Math.round(Math.exp(
               (l + p) * Math.log(10) ) ) + 'E' + -p;
         }(value);
 
