@@ -11,18 +11,17 @@
 <button id="start">start</button>
 <div id="disp"></div>
 
-<div id="app">
-{{val}},{{log}}
+<div id="app" v-if="modules">
+{{wave1}}, {{balance}},{{freq}}
 <br/>
-<syn-variable v-model="val"></syn-variable>
-<syn-variable v-model="log" type="log" :range="[20, 20000]"></syn-variable>
+<syn-variable v-model="balance" :range="[-5, 5]"></syn-variable>
+<syn-variable v-model="freq" type="log" :range="[20, 20000]"></syn-variable>
 
 
-<syn-wave-view :wave="modules.sine()"></syn-wave-view>
-<syn-wave-view :wave="modules.square()"></syn-wave-view>
-<syn-wave-view :wave="modules.saw()"></syn-wave-view>
-<syn-wave-view :wave="modules.triangle()"></syn-wave-view>
-<syn-wave-view :wave="modules.noise()"></syn-wave-view>
+<div>
+  <syn-wave-selector v-model="wave1"></syn-wave-selector>
+  <syn-wave-selector v-model="wave2"></syn-wave-selector>
+</div>
 
 
 </div>
@@ -30,11 +29,46 @@
 <script>
 
 var vm = new Vue({
-  el: '#app',
-  data: {
-    modules: synthkit.modules(),
-    val: 50,
-    log: 440
+  el : '#app',
+  data : {
+    modules : null,
+    mixer : null,
+    wave1 : 'sine',
+    wave2 : '',
+    freq : 440,
+    balance : 0
+  },
+  methods : {
+    output : function() {
+      return this.mixer? this.mixer() : 0;
+    }
+  },
+  watch : {
+    outputs: function() {}
+  },
+  computed : {
+    outputs : function() {
+      if (this.modules) {
+        var inputs = [
+            this.modules[this.wave1],
+            this.modules[this.wave2]
+          ]
+          .map(function(wave, i) {
+            if (wave) {
+              var w = wave({ freq:
+                function() { return this.freq; }.bind(this) });
+              return function() {
+                return w() * Math.exp(i == 0?
+                  (this.balance > 0? -this.balance : 0):
+                  (this.balance < 0? this.balance : 0) );
+              }.bind(this);
+            }
+            return null;
+          }.bind(this) )
+          .filter(function(v) { return !!v; });
+        this.mixer = this.modules.mixer({ inputs : inputs });
+      }
+    }
   }
 });
 
@@ -195,10 +229,12 @@ var startButton = document.getElementById('start');
 startButton.addEventListener('mousedown', function() {
   if (player == null) {
     player = synthkit.player();
-    src = init(player.audioContext.sampleRate);
+//    src = init(player.audioContext.sampleRate);
+    vm.modules = synthkit.modules({
+      sampleRate: player.audioContext.sampleRate });
   }
   if (!player.playing) {
-    player.start(src);
+    player.start(vm.output);
     startButton.textContent = 'stop';
   } else {
     player.stop();
