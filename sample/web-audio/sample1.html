@@ -13,8 +13,9 @@
 
 'use strict';
 
-var init = function() {
-  return synthkit.sine({ freq: 440 });
+var init = function(sampleRate) {
+  var modules = synthkit.modules({ sampleRate: sampleRate });
+  return modules.sine({ freq: 440 });
 };
 
 var player = null;
@@ -25,7 +26,7 @@ var startButton = document.getElementById('start');
 startButton.addEventListener('mousedown', function() {
   if (player == null) {
     player = synthkit.player();
-    src = init();
+    src = init(player.audioContext.sampleRate);
   }
   if (!player.playing) {
     player.start(src);

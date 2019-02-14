@@ -13,13 +13,14 @@
 
 'use strict';
 
-var init = function() {
+var init = function(sampleRate) {
+  var modules = synthkit.modules({ sampleRate: sampleRate });
   var freq = function() {
     return freq.val;
   };
   freq.val = 0;
-  var eg = synthkit.eg({ input: synthkit.square({ freq: freq }) });
-  var seq = synthkit.seq({ beat: 16, trigger: function(ticks) {
+  var eg = modules.eg({ input: modules.square({ freq: freq }) });
+  var seq = modules.seq({ beat: 16, trigger: function(ticks) {
     if (ticks % 4 == 0) {
       freq.val = ticks % 16 == 0? 880 : 440;
       eg.on();
@@ -27,7 +28,7 @@ var init = function() {
       eg.off();
     }
   } });
-  return synthkit.mixer({ inputs: [ eg, seq ] });
+  return modules.mixer({ inputs: [ eg, seq ] });
 };
 
 var player = null;
@@ -38,7 +39,7 @@ var startButton = document.getElementById('start');
 startButton.addEventListener('mousedown', function() {
   if (player == null) {
     player = synthkit.player();
-    src = init();
+    src = init(player.audioContext.sampleRate);
   }
   if (!player.playing) {
     player.start(src);

@@ -17,13 +17,13 @@
 <syn-variable v-model="val"></syn-variable>
 <syn-variable v-model="log" type="log" :range="[20, 20000]"></syn-variable>
 
-<!-- 
-<syn-wave-view :wave="synthkit.sine()"></syn-wave-view>
-<syn-wave-view :wave="synthkit.square()"></syn-wave-view>
-<syn-wave-view :wave="synthkit.saw()"></syn-wave-view>
-<syn-wave-view :wave="synthkit.triangle()"></syn-wave-view>
-<syn-wave-view :wave="synthkit.noise()"></syn-wave-view>
- -->
+
+<syn-wave-view :wave="modules.sine()"></syn-wave-view>
+<syn-wave-view :wave="modules.square()"></syn-wave-view>
+<syn-wave-view :wave="modules.saw()"></syn-wave-view>
+<syn-wave-view :wave="modules.triangle()"></syn-wave-view>
+<syn-wave-view :wave="modules.noise()"></syn-wave-view>
+
 
 </div>
 
@@ -32,13 +32,14 @@
 var vm = new Vue({
   el: '#app',
   data: {
-    synthkit: synthkit,
+    modules: synthkit.modules(),
     val: 50,
     log: 440
   }
 });
 
-var init = function() {
+var init = function(sampleRate) {
+  var modules = synthkit.modules({ sampleRate: sampleRate });
 
   //-------------------------------------------------------
 
@@ -49,26 +50,26 @@ var init = function() {
     }
   }();
 
-  var egHH = synthkit.eg({
-    input: synthkit.filter({
-      input: synthkit.noise(),
+  var egHH = modules.eg({
+    input: modules.filter({
+      input: modules.noise(),
       type: 'bpf',
       cutoff: 6000
     })
   });
 
-  var egBD = synthkit.eg({
-    input: synthkit.sine({ freq: 80 }),
+  var egBD = modules.eg({
+    input: modules.sine({ freq: 80 }),
     attack: 1E3,
     decay: 1E1
   });
 
-  var egSD = synthkit.eg({
-    input: synthkit.filter({
-      input: synthkit.mixer({
+  var egSD = modules.eg({
+    input: modules.filter({
+      input: modules.mixer({
         inputs: [
-          synthkit.noise(),
-          synthkit.sine({ freq: 230 })
+          modules.noise(),
+          modules.sine({ freq: 230 })
         ]
       }),
       cutoff: 1500
@@ -79,12 +80,12 @@ var init = function() {
   var notesBa = [ 10, 6, 8, 13 ];
   var noteBa = 0;
 
-  var egBa = synthkit.eg({
-    input: synthkit.filter({
-      input: synthkit.mixer({
+  var egBa = modules.eg({
+    input: modules.filter({
+      input: modules.mixer({
         inputs: [
-          synthkit.square({ freq: function() { return notes[noteBa] * 1.005; } }),
-          synthkit.square({ freq: function() { return notes[noteBa]; } })
+          modules.square({ freq: function() { return notes[noteBa] * 1.005; } }),
+          modules.square({ freq: function() { return notes[noteBa]; } })
         ]
       }),
       cutoff: 21500
@@ -96,12 +97,12 @@ var init = function() {
   var notesLd = [ 10, 6, 8, 13, 6, 8, 13, 10 ];
   var noteLd = 0;
 
-  var egLd = synthkit.eg({
-    input: synthkit.filter({
-      input: synthkit.mixer({
+  var egLd = modules.eg({
+    input: modules.filter({
+      input: modules.mixer({
         inputs: [
-          synthkit.saw({ freq: function() { return 4*notes[noteLd] * 1.005; } }),
-          synthkit.saw({ freq: function() { return 4*notes[noteLd]; } })
+          modules.saw({ freq: function() { return 4*notes[noteLd] * 1.005; } }),
+          modules.saw({ freq: function() { return 4*notes[noteLd]; } })
         ]
       }),
       cutoff: 21500
@@ -120,7 +121,7 @@ var init = function() {
   var patBa = '01111101 01110101'.replace(/\s+/g, '');
   var patLd = '10010010 01001001'.replace(/\s+/g, '');
 
-  var seq1 = synthkit.seq({ tempo: 132, beat: beat });
+  var seq1 = modules.seq({ tempo: 132, beat: beat });
   seq1.trigger = function(ticks) {
 
     disp.ticks = ticks;
@@ -169,16 +170,16 @@ var init = function() {
   };
   window.requestAnimationFrame(enterFrame);
 console.log(vm.log)
-  return synthkit.mixer({
+  return modules.mixer({
     inputs : [
       /*
-      synthkit.vol({ input: egHH, gain: -2, pan: -1 }),
-      synthkit.vol({ input: egBD, gain: 0 }),
-      synthkit.vol({ input: egSD, gain: -0.5 }),
-      synthkit.vol({ input: egBa, gain: -1, pan: 1 }),
+      modules.vol({ input: egHH, gain: -2, pan: -1 }),
+      modules.vol({ input: egBD, gain: 0 }),
+      modules.vol({ input: egSD, gain: -0.5 }),
+      modules.vol({ input: egBa, gain: -1, pan: 1 }),
       */
-      synthkit.sine({ freq: function() { return vm.log; } }),
-  //    synthkit.vol({ input: egLd, gain: -2, pan: -0.5 }),
+      modules.sine({ freq: function() { return vm.log; } }),
+  //    modules.vol({ input: egLd, gain: -2, pan: -0.5 }),
       seq1
     ],
     mono : false
@@ -194,7 +195,7 @@ var startButton = document.getElementById('start');
 startButton.addEventListener('mousedown', function() {
   if (player == null) {
     player = synthkit.player();
-    src = init();
+    src = init(player.audioContext.sampleRate);
   }
   if (!player.playing) {
     player.start(src);
