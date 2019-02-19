@@ -16,11 +16,14 @@
 <br/>
 <syn-variable v-model="balance" :range="[-5, 5]"></syn-variable>
 <syn-variable v-model="freq" type="log" :range="[20, 20000]"></syn-variable>
-
+<syn-variable v-model="lfo" type="log" :range="[0.2, 200]"></syn-variable>
+<syn-variable v-model="lfoMod" :range="[0, 4]"></syn-variable>
+<syn-variable v-model="lfoAmp" :range="[0, 4]"></syn-variable>
 
 <div>
   <syn-wave-selector v-model="wave1"></syn-wave-selector>
   <syn-wave-selector v-model="wave2"></syn-wave-selector>
+  <syn-wave-selector v-model="lfoWave"></syn-wave-selector>
 </div>
 
 
@@ -35,7 +38,11 @@ var vm = new Vue({
     mixer : null,
     wave1 : 'sine',
     wave2 : '',
+    lfoWave : '',
     freq : 440,
+    lfo : 0.5,
+    lfoMod : 0,
+    lfoAmp : 0,
     balance : 0
   },
   methods : {
@@ -49,6 +56,14 @@ var vm = new Vue({
   computed : {
     outputs : function() {
       if (this.modules) {
+        var lfo1 = function() { return 0; };
+        var lfo2 = function() { return 0; };
+        if (this.modules[this.lfoWave]) {
+          lfo1 = this.modules[this.lfoWave]({
+            freq : function() { return this.lfo; }.bind(this) });
+          lfo2 = this.modules[this.lfoWave]({
+            freq : function() { return this.lfo; }.bind(this) });
+        }
         var inputs = [
             this.modules[this.wave1],
             this.modules[this.wave2]
@@ -56,9 +71,11 @@ var vm = new Vue({
           .map(function(wave, i) {
             if (wave) {
               var w = wave({ freq:
-                function() { return this.freq; }.bind(this) });
+                function() { return this.freq * Math.exp(
+                  lfo1() * this.lfoMod); }.bind(this) });
               return function() {
-                return w() * Math.exp(i == 0?
+                var amp = Math.exp(lfo2() * this.lfoAmp);
+                return amp * w() * Math.exp(i == 0?
                   (this.balance > 0? -this.balance : 0):
                   (this.balance < 0? this.balance : 0) );
               }.bind(this);
