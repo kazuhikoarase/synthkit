@@ -181,13 +181,14 @@ var synthkit = function() {
 
       var _2PI = Math.PI * 2;
       var _2PI_Fs = _2PI/ Fs;
+      var A = 1;
 
       var t = 0;
 
       var module;
       return module = extend(function() {
         try {
-          return Math.sin(t);
+          return A * Math.sin(t);
         } finally {
           t = (t + _2PI_Fs * module.freq() ) % _2PI;
         }
@@ -199,13 +200,15 @@ var synthkit = function() {
 
     var square = function(opts) {
 
-      var t = 0;
       var _2_Fs = 2 / Fs;
+      var A = 1;
+
+      var t = 0;
 
       var module;
       return module = extend(function() {
         try {
-          return t < 2 * module.ratio()? 1 : -1;
+          return t < 2 * module.ratio()? A : -A;
         } finally {
           t = (t + _2_Fs * module.freq() ) % 2;
         }
@@ -218,13 +221,15 @@ var synthkit = function() {
 
     var saw = function(opts) {
 
-      var t = 1;
       var _2_Fs = 2 / Fs;
+      var A = 1;
+
+      var t = 1;
 
       var module;
       return module = extend(function() {
         try {
-          return 1 - t;
+          return A - A * t;
         } finally {
           t = (t + _2_Fs * module.freq() ) % 2;
         }
@@ -236,13 +241,15 @@ var synthkit = function() {
 
     var triangle = function(opts) {
 
-      var t = 0.5;
       var _2_Fs = 2 / Fs;
+      var A = 1;
+
+      var t = 0.5;
 
       var module;
       return module = extend(function() {
         try {
-          return (~~t % 2 == 0? t % 1 : 1 - t % 1) * 2 - 1;
+          return (~~t % 2 == 0? t % 1 : 1 - t % 1) * 2 * A - A;
         } finally {
           t = (t + _2_Fs * module.freq() ) % 2;
         }
@@ -254,7 +261,9 @@ var synthkit = function() {
 
     var noise = function(opts) {
 
-      var A = 1.37;
+      var S = 1.37;
+      var A = 1;
+
       var output = 0;
 
       var module;
@@ -262,7 +271,7 @@ var synthkit = function() {
         try {
           return output;
         } finally {
-          output = (A * (A + output) ) % 2 - 1;
+          output = (S * (S + output) ) % (2 * A) - A;
         }
       }, {
         sync: function() { output = 0; }
