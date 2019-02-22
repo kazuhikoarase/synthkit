@@ -12,11 +12,12 @@
 <div id="disp"></div>
 
 <div id="app" v-if="modules">
-{{wave1}}, {{balance}},{{freq}}
+{{wave1}}, bal:{{balance}},freq:{{freq}},lfo:{{lfo}}
 <br/>
 <syn-variable v-model="balance" :range="[-5, 5]"></syn-variable>
+<syn-variable v-model="detune" :range="[0, 1]"></syn-variable>
 <syn-variable v-model="freq" type="log" :range="[20, 20000]"></syn-variable>
-<syn-variable v-model="lfo" type="log" :range="[0.2, 200]"></syn-variable>
+<syn-variable v-model="lfo" type="log" :range="[0.02, 200]"></syn-variable>
 <syn-variable v-model="lfoMod" :range="[0, 4]"></syn-variable>
 <syn-variable v-model="lfoAmp" :range="[0, 4]"></syn-variable>
 
@@ -43,7 +44,8 @@ var vm = new Vue({
     lfo : 0.5,
     lfoMod : 0,
     lfoAmp : 0,
-    balance : 0
+    balance : 0,
+    detune : 0
   },
   methods : {
     output : function() {
@@ -51,46 +53,52 @@ var vm = new Vue({
     }
   },
   watch : {
-    outputs: function() {}
+    outputs : function() {}
   },
   computed : {
     outputs : function() {
-      if (this.modules) {
-        var lfo1 = function() { return 0; };
-        var lfo2 = function() { return 0; };
-        if (this.modules[this.lfoWave]) {
-          lfo1 = this.modules[this.lfoWave]({
-            freq : function() { return this.lfo; }.bind(this) });
-          lfo2 = this.modules[this.lfoWave]({
-            freq : function() { return this.lfo; }.bind(this) });
-        }
-        var inputs = [
-            this.modules[this.wave1],
-            this.modules[this.wave2]
-          ]
-          .map(function(wave, i) {
-            if (wave) {
-              var w = wave({ freq:
-                function() { return this.freq * Math.exp(
-                  lfo1() * this.lfoMod); }.bind(this) });
-              return function() {
-                var amp = Math.exp(lfo2() * this.lfoAmp);
-                return amp * w() * Math.exp(i == 0?
-                  (this.balance > 0? -this.balance : 0):
-                  (this.balance < 0? this.balance : 0) );
-              }.bind(this);
-            }
-            return null;
-          }.bind(this) )
-          .filter(function(v) { return !!v; });
-        this.mixer = this.modules.mixer({ inputs : inputs });
+
+      if (!this.modules) {
+        return;
       }
+
+      var lfo1 = function() { return 0; };
+      var lfo2 = function() { return 0; };
+      if (this.modules[this.lfoWave]) {
+        lfo1 = this.modules[this.lfoWave]({
+          freq : function() { return this.lfo; }.bind(this) });
+        lfo2 = this.modules[this.lfoWave]({
+          freq : function() { return this.lfo; }.bind(this) });
+      }
+
+      var inputs = [
+          this.modules[this.wave1],
+          this.modules[this.wave2]
+        ]
+        .map(function(wave, i) {
+          if (wave) {
+            var w = wave({ freq :
+              function() {
+                return this.freq * Math.exp(lfo1() * this.lfoMod + i * this.detune);
+              }.bind(this) });
+            return function() {
+              var amp = Math.exp(lfo2() * this.lfoAmp);
+              return amp * w() * Math.exp(i == 0?
+                (this.balance > 0? -this.balance : 0):
+                (this.balance < 0? this.balance : 0) );
+            }.bind(this);
+          }
+          return null;
+        }.bind(this) )
+        .filter(function(v) { return !!v; });
+
+      this.mixer = this.modules.mixer({ inputs : inputs });
     }
   }
 });
 
 var init = function(sampleRate) {
-  var modules = synthkit.modules({ sampleRate: sampleRate });
+  var modules = synthkit.modules({ sampleRate : sampleRate });
 
   //-------------------------------------------------------
 
@@ -102,67 +110,67 @@ var init = function(sampleRate) {
   }();
 
   var egHH = modules.eg({
-    input: modules.filter({
-      input: modules.noise(),
-      type: 'bpf',
-      cutoff: 6000
+    input : modules.filter({
+      input : modules.noise(),
+      type : 'bpf',
+      cutoff : 6000
     })
   });
 
   var egBD = modules.eg({
-    input: modules.sine({ freq: 80 }),
-    attack: 1E3,
-    decay: 1E1
+    input : modules.sine({ freq : 80 }),
+    attack : 1E3,
+    decay : 1E1
   });
 
   var egSD = modules.eg({
-    input: modules.filter({
-      input: modules.mixer({
-        inputs: [
+    input : modules.filter({
+      input : modules.mixer({
+        inputs : [
           modules.noise(),
-          modules.sine({ freq: 230 })
+          modules.sine({ freq : 230 })
         ]
       }),
-      cutoff: 1500
+      cutoff : 1500
     }),
-    decay: 6E0
+    decay : 6E0
   });
 
   var notesBa = [ 10, 6, 8, 13 ];
   var noteBa = 0;
 
   var egBa = modules.eg({
-    input: modules.filter({
-      input: modules.mixer({
-        inputs: [
-          modules.square({ freq: function() { return notes[noteBa] * 1.005; } }),
-          modules.square({ freq: function() { return notes[noteBa]; } })
+    input : modules.filter({
+      input : modules.mixer({
+        inputs : [
+          modules.square({ freq : function() { return notes[noteBa] * 1.005; } }),
+          modules.square({ freq : function() { return notes[noteBa]; } })
         ]
       }),
-      cutoff: 21500
+      cutoff : 21500
     }),
-    attack: 1e3,
-    decay: 1e1
+    attack : 1e3,
+    decay : 1e1
   });
 
   var notesLd = [ 10, 6, 8, 13, 6, 8, 13, 10 ];
   var noteLd = 0;
 
   var egLd = modules.eg({
-    input: modules.filter({
-      input: modules.mixer({
-        inputs: [
-          modules.saw({ freq: function() { return 4*notes[noteLd] * 1.005; } }),
-          modules.saw({ freq: function() { return 4*notes[noteLd]; } })
+    input : modules.filter({
+      input : modules.mixer({
+        inputs : [
+          modules.saw({ freq : function() { return 4*notes[noteLd] * 1.005; } }),
+          modules.saw({ freq : function() { return 4*notes[noteLd]; } })
         ]
       }),
-      cutoff: 21500
+      cutoff : 21500
     }),
-    attack: 1e1,
-    decay: 1e0
+    attack : 1e1,
+    decay : 1e0
   });
 
-  var disp = { ticks: 0 };
+  var disp = { ticks : 0 };
 
   var beat = 16;
 
@@ -172,7 +180,7 @@ var init = function(sampleRate) {
   var patBa = '01111101 01110101'.replace(/\s+/g, '');
   var patLd = '10010010 01001001'.replace(/\s+/g, '');
 
-  var seq1 = modules.seq({ tempo: 132, beat: beat });
+  var seq1 = modules.seq({ tempo : 132, beat : beat });
   seq1.trigger = function(ticks) {
 
     disp.ticks = ticks;
@@ -220,17 +228,17 @@ var init = function(sampleRate) {
     window.requestAnimationFrame(enterFrame);
   };
   window.requestAnimationFrame(enterFrame);
-console.log(vm.log)
+
   return modules.mixer({
     inputs : [
-      /*
-      modules.vol({ input: egHH, gain: -2, pan: -1 }),
-      modules.vol({ input: egBD, gain: 0 }),
-      modules.vol({ input: egSD, gain: -0.5 }),
-      modules.vol({ input: egBa, gain: -1, pan: 1 }),
-      */
-      modules.sine({ freq: function() { return vm.log; } }),
-  //    modules.vol({ input: egLd, gain: -2, pan: -0.5 }),
+      
+      modules.vol({ input : egHH, gain : -2, pan : -1 }),
+      modules.vol({ input : egBD, gain : 0 }),
+      modules.vol({ input : egSD, gain : -0.5 }),
+      modules.vol({ input : egBa, gain : -1, pan : 1 }),
+//      modules.vol({ input : egLd, gain : -2, pan : -0.5 }),
+
+  //    modules.sine({ freq : function() { return vm.log; } }),
       seq1
     ],
     mono : false
@@ -246,11 +254,12 @@ var startButton = document.getElementById('start');
 startButton.addEventListener('mousedown', function() {
   if (player == null) {
     player = synthkit.player();
-//    src = init(player.audioContext.sampleRate);
+    src = init(player.audioContext.sampleRate);
     vm.modules = synthkit.modules({
-      sampleRate: player.audioContext.sampleRate });
+      sampleRate : player.audioContext.sampleRate });
   }
   if (!player.playing) {
+//    player.start(src);
     player.start(vm.output);
     startButton.textContent = 'stop';
   } else {

@@ -3,10 +3,10 @@
 //
 // Copyright (c) 2016 Kazuhiko Arase
 //
-// URL: https://github.com/kazuhikoarase/synthkit/
+// URL : https ://github.com/kazuhikoarase/synthkit/
 //
-// Licensed under the MIT license:
-//  http://www.opensource.org/licenses/mit-license.php
+// Licensed under the MIT license :
+//  http ://www.opensource.org/licenses/mit-license.php
 //
 
 var synthkit = function() {
@@ -33,22 +33,20 @@ var synthkit = function() {
     return module = extend(function() {
       return 0;
     }, {
-      sync: function() {}
-    });
+      sync : function() { return this; }
+    }).sync();
   };
 
   var modules = function(opts) {
 
-    opts = extend({ sampleRate: 44100 }, opts);
+    opts = extend({ sampleRate : 44100 }, opts);
     var Fs = opts.sampleRate;
 
     var sequencer = function(opts) {
 
       var _T = 1 / (Fs * 120 * 2);
 
-      var t = 0;
-      var ticks = -1;
-      var nextTicks;
+      var t, ticks, nextTicks;
 
       var module;
       return module = extend(function() {
@@ -64,13 +62,13 @@ var synthkit = function() {
           t += 1;
         }
       }, {
-        sync: function() { t = 0; ticks = -1; },
-        tempo: function() { return 120; },
-        beat: function() { return 4; },
-        trigger: function(ticks) {
+        sync : function() { t = 0; ticks = -1; return this; },
+        tempo : function() { return 120; },
+        beat : function() { return 4; },
+        trigger : function(ticks) {
           console.log(ticks);
         }
-      }, opts || {});
+      }, opts || {}).sync();
     };
 
     var envelopeGenerator = function(opts) {
@@ -79,8 +77,7 @@ var synthkit = function() {
       var minGain = Math.log(10) * -3; // ~= -6.9, -60dB
       var maxGain = 0;
 
-      var gain = minGain;
-      var state = '';
+      var gain, state;
 
       var module, val;
       return module = extend(function() {
@@ -115,31 +112,36 @@ var synthkit = function() {
           } else if (state == '') {
             // nothing to do.
           } else {
-            throw 'state:' + state;
+            throw 'state :' + state;
           }
         }
       }, {
-        sync: function() { gain = minGain; state = ''; module.input.sync(); },
-        on: function(gain) { state = 'a'; maxGain = gain || 0; },
-        off: function() { state = 'r'; },
-        attack: function() { return 1E3; },
-        decay: function() { return 1E0; },
-        sustain: function() { return minGain; },
-        release: function() { return 1E1; },
-        input: defaultInput()
-      }, opts || {});
-    }
+        sync : function() {
+          gain = minGain;
+          state = '';
+          this.input.sync();
+          return this;
+        },
+        on : function(gain) { state = 'a'; maxGain = gain || 0; },
+        off : function() { state = 'r'; },
+        attack : function() { return 1E3; },
+        decay : function() { return 1E0; },
+        sustain : function() { return minGain; },
+        release : function() { return 1E1; },
+        input : defaultInput()
+      }, opts || {}).sync();
+    };
 
     var volume = function(opts) {
       var module;
       return module = extend(function() {
         return module.input() * Math.exp(module.gain() );
       }, {
-        sync: function() { module.input.sync(); },
-        gain: function() { return 0; },
-        pan: function() { return 0; },
-        input: defaultInput()
-      }, opts || {});
+        sync : function() { this.input.sync(); return this; },
+        gain : function() { return 0; },
+        pan : function() { return 0; },
+        input : defaultInput()
+      }, opts || {}).sync();
     };
 
     var mixer = function(opts) {
@@ -167,23 +169,26 @@ var synthkit = function() {
         }
         return output;
       }, {
-        sync: function() {
-          inputs = module.inputs;
+        sync : function() {
+          inputs = this.inputs;
           for (i = 0; i < inputs.length; i += 1) {
-            inputs[i].sync();
+            if (inputs[i].sync) {
+              inputs[i].sync();
+            }
           }
+          return this;
         },
-        inputs: []
-      }, opts || {});
+        inputs : []
+      }, opts || {}).sync();
     };
 
     var sine = function(opts) {
 
       var _2PI = Math.PI * 2;
-      var _2PI_Fs = _2PI/ Fs;
+      var _2PI_Fs = _2PI / Fs;
       var A = 1;
 
-      var t = 0;
+      var t;
 
       var module;
       return module = extend(function() {
@@ -193,70 +198,79 @@ var synthkit = function() {
           t = (t + _2PI_Fs * module.freq() ) % _2PI;
         }
       }, {
-        sync: function() { t = 0; },
-        freq: function() { return 440; }
-      }, opts || {});
+        t0 : 0,
+        sync : function() { t = this.t0; return this; },
+        freq : function() { return 440; }
+      }, opts || {}).sync();
     };
 
     var square = function(opts) {
 
-      var _2_Fs = 2 / Fs;
+      var _2PI = Math.PI * 2;
+      var _2PI_Fs = _2PI / Fs;
       var A = 1;
 
-      var t = 0;
+      var t;
 
       var module;
       return module = extend(function() {
         try {
-          return t < 2 * module.ratio()? A : -A;
+          return t < _2PI * module.ratio()? A : -A;
         } finally {
-          t = (t + _2_Fs * module.freq() ) % 2;
+          t = (t + _2PI_Fs * module.freq() ) % _2PI;
         }
       }, {
-        sync: function() { t = 0; },
-        freq: function() { return 440; },
-        ratio: function() { return 0.5; }
-      }, opts || {});
+        t0 : 0,
+        sync : function() { t = this.t0; return this; },
+        freq : function() { return 440; },
+        ratio : function() { return 0.5; }
+      }, opts || {}).sync();
     };
 
     var saw = function(opts) {
 
-      var _2_Fs = 2 / Fs;
+      var _PI = Math.PI;
+      var _2PI = _PI * 2;
+      var _2PI_Fs = _2PI / Fs;
       var A = 1;
 
-      var t = 1;
+      var t;
 
       var module;
       return module = extend(function() {
         try {
-          return A - A * t;
+          return A - A * t / _PI;
         } finally {
-          t = (t + _2_Fs * module.freq() ) % 2;
+          t = (t + _2PI_Fs * module.freq() ) % _2PI;
         }
       }, {
-        sync: function() { t = 1; },
-        freq: function() { return 440; }
-      }, opts || {});
+        t0 : _PI,
+        sync : function() { t = this.t0; return this; },
+        freq : function() { return 440; }
+      }, opts || {}).sync();
     };
 
     var triangle = function(opts) {
 
-      var _2_Fs = 2 / Fs;
+      var _PI = Math.PI;
+      var _2PI = _PI * 2;
+      var _2PI_Fs = _2PI / Fs;
       var A = 1;
 
-      var t = 0.5;
+      var t;
 
       var module;
       return module = extend(function() {
         try {
-          return (~~t % 2 == 0? t % 1 : 1 - t % 1) * 2 * A - A;
+          return (t < _PI? t % _PI : _PI - t % _PI) * 2 * A / _PI - A;
         } finally {
-          t = (t + _2_Fs * module.freq() ) % 2;
+          t = (t + _2PI_Fs * module.freq() ) % _2PI;
         }
       }, {
-        sync: function() { t = 0.5; },
-        freq: function() { return 440; }
-      }, opts || {});
+        t0 : _PI / 2,
+        sync : function() { t = this.t0; return this; },
+        freq : function() { return 440; }
+      }, opts || {}).sync();
     };
 
     var noise = function(opts) {
@@ -264,7 +278,7 @@ var synthkit = function() {
       var S = 1.37;
       var A = 1;
 
-      var output = 0;
+      var output;
 
       var module;
       return module = extend(function() {
@@ -274,15 +288,15 @@ var synthkit = function() {
           output = (S * (S + output) ) % (2 * A) - A;
         }
       }, {
-        sync: function() { output = 0; }
-      }, opts || {});
+        sync : function() { output = 0; return this; }
+      }, opts || {}).sync();
     };
 
     var BiquadFilterType = {
-      LPF: 'lpf',
-      HPF: 'hpf',
-      BPF: 'bpf',
-      NOTCH: 'notch'
+      LPF : 'lpf',
+      HPF : 'hpf',
+      BPF : 'bpf',
+      NOTCH : 'notch'
     };
 
     var biquadFilter = function(opts) {
@@ -292,14 +306,9 @@ var synthkit = function() {
 
       var _a1, _a2, _b0, _b1, _b2;
 
-      var _in0 = 0;
-      var _out0 = 0;
-      var _in1 = 0;
-      var _in2 = 0;
-      var _out1 = 0;
-      var _out2 = 0;
+      var _in0, _out0, _in1, _in2, _out1, _out2;
 
-      var last = { type: '', cutoff: 0, resonance: 0 };
+      var last = { type : '', cutoff : 0, resonance : 0 };
 
       var prepare = function(type, cutoff, resonance) {
 
@@ -339,7 +348,7 @@ var synthkit = function() {
           a1 = -2 * cos_w0;
           a2 = 1 - alpha;
         } else {
-          throw 'unknown type:' + module.type();
+          throw 'unknown type :' + module.type();
         }
 
         // prepare params
@@ -376,33 +385,34 @@ var synthkit = function() {
           _out1 = _out0;
         }
       }, {
-        sync: function() {
+        sync : function() {
           _in0 = 0;
           _out0 = 0;
           _in1 = 0;
           _in2 = 0;
           _out1 = 0;
           _out2 = 0;
-          module.input.sync();
+          this.input.sync();
+          return this;
         },
-        type: function() { return BiquadFilterType.LPF; },
-        cutoff: function() { return 440; },
-        resonance: function() { return 0.5; },
-        input: defaultInput()
-      }, opts || {});
+        type : function() { return BiquadFilterType.LPF; },
+        cutoff : function() { return 440; },
+        resonance : function() { return 0.5; },
+        input : defaultInput()
+      }, opts || {}).sync();
     };
 
     return {
-      sine: sine,
-      square: square,
-      saw: saw,
-      triangle: triangle,
-      noise: noise,
-      filter: biquadFilter,
-      seq: sequencer,
-      eg: envelopeGenerator,
-      vol: volume,
-      mixer: mixer
+      sine : sine,
+      square : square,
+      saw : saw,
+      triangle : triangle,
+      noise : noise,
+      filter : biquadFilter,
+      seq : sequencer,
+      eg : envelopeGenerator,
+      vol : volume,
+      mixer : mixer
     };
   };
 
@@ -435,14 +445,14 @@ var synthkit = function() {
 
     var player = {
 
-      audioContext: audioContext,
-      gainNode: gainNode,
-      scriptNode: scriptNode,
+      audioContext : audioContext,
+      gainNode : gainNode,
+      scriptNode : scriptNode,
 
-      src: function() { return 0; },
+      src : function() { return 0; },
 
-      playing: false,
-      start: function(src) {
+      playing : false,
+      start : function(src) {
         if (this.playing) {
           return;
         }
@@ -450,7 +460,7 @@ var synthkit = function() {
         scriptNode.connect(gainNode);
         this.playing = true;
       },
-      stop: function() {
+      stop : function() {
         if (!this.playing) {
           return;
         }
@@ -463,8 +473,8 @@ var synthkit = function() {
   };
 
   return {
-    modules: modules,
-    player: player
+    modules : modules,
+    player : player
   };
 }();
 
